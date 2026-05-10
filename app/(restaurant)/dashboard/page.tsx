@@ -73,13 +73,25 @@ export default function DashboardPage() {
           <>
             {/* Header */}
             <div className="anim-1" style={{ opacity: 0, marginBottom: "2rem" }}>
-              <h1 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>
-                {restaurant.name}
-              </h1>
-              <p style={{ fontSize: "0.9375rem", color: "#9a9088", marginTop: "0.25rem" }}>
-                {restaurant.address} · {restaurant.openTime} – {restaurant.closeTime}
-                {restaurant.cuisine && ` · ${restaurant.cuisine}`}
-              </p>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                <div>
+                  <h1 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>
+                    {restaurant.name}
+                  </h1>
+                  <p style={{ fontSize: "0.9375rem", color: "#9a9088", marginTop: "0.25rem" }}>
+                    {restaurant.address} · {restaurant.openTime} – {restaurant.closeTime}
+                    {restaurant.cuisine && ` · ${restaurant.cuisine}`}
+                  </p>
+                </div>
+                <Link
+                  href={`/restaurants/${restaurant.id}`}
+                  className="btn btn-ghost btn-sm"
+                  style={{ textDecoration: "none", flexShrink: 0 }}
+                  target="_blank"
+                >
+                  View public page ↗
+                </Link>
+              </div>
             </div>
 
             {/* Stats */}

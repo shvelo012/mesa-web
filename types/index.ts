@@ -71,7 +71,10 @@ export interface Reservation {
   partySize: number;
   status: ReservationStatus;
   notes?: string;
-  userId: string;
+  userId: string | null;
+  guestName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
   tableId: string;
   table?: TableItem;
   user?: User;

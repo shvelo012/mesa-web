@@ -17,6 +17,7 @@ export default function RestaurantDetailPage() {
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
   const [booking, setBooking] = useState({ date: "", startTime: "", endTime: "", partySize: 2, notes: "" });
+  const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
   const [bookingMsg, setBookingMsg] = useState("");
   const [bookingErr, setBookingErr] = useState("");
 
@@ -34,13 +35,23 @@ export default function RestaurantDetailPage() {
   }
 
   async function handleBook() {
-    if (!user) { router.push("/login"); return; }
     if (!selectedTable) { setBookingErr("Please select a table first"); return; }
+    if (!user && (!guest.name.trim() || !guest.email.trim())) {
+      setBookingErr("Name and email are required");
+      return;
+    }
     setBookingErr("");
     try {
-      await api.post("/reservations", { tableId: selectedTable.id, ...booking, partySize: +booking.partySize });
-      setBookingMsg("Reservation confirmed! Check My Reservations.");
+      const payload: Record<string, unknown> = { tableId: selectedTable.id, ...booking, partySize: +booking.partySize };
+      if (!user) {
+        payload.guestName = guest.name.trim();
+        payload.guestEmail = guest.email.trim();
+        if (guest.phone.trim()) payload.guestPhone = guest.phone.trim();
+      }
+      await api.post("/reservations", payload);
+      setBookingMsg("Reservation confirmed!");
       setSelectedTable(null);
+      if (!user) setGuest({ name: "", email: "", phone: "" });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setBookingErr(msg || "Booking failed");
@@ -199,8 +210,29 @@ export default function RestaurantDetailPage() {
                 <label className="label">Special requests</label>
                 <textarea value={booking.notes} onChange={(e) => setBooking((b) => ({ ...b, notes: e.target.value }))} rows={2} className="input" placeholder="Dietary needs, occasion…" />
               </div>
+              {!user && (
+                <>
+                  <div style={{ borderTop: "1px solid rgba(24,22,15,0.08)", paddingTop: "1rem" }}>
+                    <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginBottom: "0.75rem" }}>Your details</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      <div>
+                        <label className="label">Name *</label>
+                        <input type="text" value={guest.name} onChange={(e) => setGuest((g) => ({ ...g, name: e.target.value }))} className="input" placeholder="Full name" />
+                      </div>
+                      <div>
+                        <label className="label">Email *</label>
+                        <input type="email" value={guest.email} onChange={(e) => setGuest((g) => ({ ...g, email: e.target.value }))} className="input" placeholder="your@email.com" />
+                      </div>
+                      <div>
+                        <label className="label">Phone</label>
+                        <input type="tel" value={guest.phone} onChange={(e) => setGuest((g) => ({ ...g, phone: e.target.value }))} className="input" placeholder="+1 234 567 8900" />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
               <button onClick={handleBook} className="btn btn-primary btn-md" style={{ width: "100%", marginTop: "0.25rem" }}>
-                {user ? "Reserve table" : "Sign in to reserve"}
+                Reserve table
               </button>
             </div>
           </div>
