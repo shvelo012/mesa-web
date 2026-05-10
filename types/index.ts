@@ -52,6 +52,7 @@ export interface TableItem {
   isWindowSeat: boolean;
   isActive: boolean;
   notes?: string;
+  imageUrl?: string | null;
   floorId: string;
 }
 

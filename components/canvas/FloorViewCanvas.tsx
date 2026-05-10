@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Stage, Layer, Rect, Circle, Line, Group, Text } from "react-konva";
+import { Stage, Layer, Rect, Line, Group } from "react-konva";
 import Konva from "konva";
 import { Floor, TableItem } from "@/types";
+import TableShape from "./TableShape";
 
 interface Props {
   floor: Floor;
@@ -88,6 +89,7 @@ export default function FloorViewCanvas({ floor, selectedTableId, onSelectTable,
                 y={t.y}
                 rotation={t.rotation}
                 onClick={() => available && onSelectTable(t)}
+                onTap={() => available && onSelectTable(t)}
                 onMouseEnter={(e) => {
                   setCursor(e.target.getStage(), available ? "pointer" : "not-allowed");
                   if (available) setHoveredId(t.id);
@@ -97,35 +99,14 @@ export default function FloorViewCanvas({ floor, selectedTableId, onSelectTable,
                   setHoveredId(null);
                 }}
               >
-                {t.shape === "CIRCLE" ? (
-                  <Circle
-                    x={t.width / 2}
-                    y={t.height / 2}
-                    radius={Math.min(t.width, t.height) / 2}
-                    fill={fill}
-                    stroke={stroke}
-                    strokeWidth={isSelected ? 2 : 1}
-                  />
-                ) : (
-                  <Rect
-                    width={t.width}
-                    height={t.height}
-                    fill={fill}
-                    stroke={stroke}
-                    strokeWidth={isSelected ? 2 : 1}
-                    cornerRadius={3}
-                  />
-                )}
-                <Text
-                  text={tooSmall ? `${t.label}\n${t.capacity}p max` : `${t.label}\n${t.capacity}p`}
-                  width={t.width}
-                  height={t.height}
-                  align="center"
-                  verticalAlign="middle"
-                  fontSize={10}
-                  fill={available ? "#1e293b" : "#94a3b8"}
-                  fontStyle="bold"
-                  listening={false}
+                <TableShape
+                  table={t}
+                  fill={fill}
+                  stroke={stroke}
+                  strokeWidth={isSelected ? 2 : 1}
+                  textColor={available ? "#1e293b" : "#94a3b8"}
+                  dimChairs={!available}
+                  opacity={available ? 1 : 0.85}
                 />
               </Group>
             );

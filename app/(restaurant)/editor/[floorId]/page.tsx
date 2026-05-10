@@ -134,6 +134,25 @@ export default function EditorPage() {
 
       <Toolbar onSave={handleSave} saving={saving} />
 
+      <div
+        style={{
+          padding: "0.5rem 1rem",
+          background: "#fffaf5",
+          borderBottom: "1px solid rgba(196,65,12,0.15)",
+          fontSize: "0.75rem",
+          color: "#5c5248",
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+          flexShrink: 0,
+        }}
+      >
+        <span>
+          <strong style={{ color: "#c4410c" }}>Tip:</strong> keep walkways clear — red dashed ring means
+          tables are too close. Long sides face neighbors; window-flag tables along walls.
+        </span>
+      </div>
+
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <div
           style={{

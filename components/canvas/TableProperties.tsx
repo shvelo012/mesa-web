@@ -1,7 +1,32 @@
 "use client";
 
+import { useRef } from "react";
 import { useCanvasStore } from "@/store/canvas.store";
 import { TableShape } from "@/types";
+
+async function fileToCompressedDataUrl(file: File, maxDim = 720, quality = 0.78): Promise<string> {
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error("image load failed"));
+    i.src = dataUrl;
+  });
+  const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const w = Math.round(img.width * ratio);
+  const h = Math.round(img.height * ratio);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/jpeg", quality);
+}
 
 const inputSt: React.CSSProperties = {
   width: "100%",
@@ -27,6 +52,7 @@ const labelSt: React.CSSProperties = {
 export default function TableProperties() {
   const { tables, selectedId, updateTable, removeTable, setSelectedId } = useCanvasStore();
   const table = tables.find((t) => t.id === selectedId);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   if (!table) {
     return (
@@ -110,6 +136,52 @@ export default function TableProperties() {
       <div>
         <label style={labelSt}>Notes</label>
         <textarea style={{ ...inputSt, resize: "none" }} rows={2} value={table.notes || ""} onChange={(e) => update({ notes: e.target.value })} placeholder="e.g. near window, accessible" />
+      </div>
+
+      <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
+
+      <div>
+        <label style={labelSt}>Photo</label>
+        {table.imageUrl ? (
+          <div style={{ position: "relative", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(24,22,15,0.14)" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={table.imageUrl} alt={table.label} style={{ display: "block", width: "100%", height: "120px", objectFit: "cover" }} />
+            <button
+              onClick={() => update({ imageUrl: null })}
+              style={{ position: "absolute", top: 6, right: 6, background: "rgba(24,22,15,0.75)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.7rem", padding: "0.2rem 0.45rem", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => fileRef.current?.click()}
+            style={{ width: "100%", padding: "0.75rem", background: "#fafaf8", border: "1px dashed rgba(24,22,15,0.2)", borderRadius: "6px", cursor: "pointer", fontSize: "0.8125rem", color: "#5c5248", fontFamily: "inherit" }}
+          >
+            + Upload photo
+          </button>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              const dataUrl = await fileToCompressedDataUrl(file);
+              update({ imageUrl: dataUrl });
+            } catch (err) {
+              console.error(err);
+            } finally {
+              e.target.value = "";
+            }
+          }}
+        />
+        <p style={{ fontSize: "0.7rem", color: "#9a9088", marginTop: "0.35rem" }}>
+          Shown to guests when they tap this table.
+        </p>
       </div>
     </div>
   );

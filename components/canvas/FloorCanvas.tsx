@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useCallback, useId, useEffect, useState } from "react";
-import { Stage, Layer, Rect, Circle, Line, Group, Text, Transformer } from "react-konva";
+import { useRef, useCallback, useEffect, useState } from "react";
+import { Stage, Layer, Rect, Line, Group, Transformer } from "react-konva";
 import Konva from "konva";
 import { useCanvasStore } from "@/store/canvas.store";
 import { TableItem, Wall } from "@/types";
-import { TableShape } from "@/types";
+import TableShape, { CHAIR_PAD, checkCollision } from "./TableShape";
 
 const GRID = 10;
 
@@ -18,6 +18,7 @@ interface Props {
 function TableNode({
   table,
   isSelected,
+  hasCollision,
   onSelect,
   onChange,
   stageWidth,
@@ -25,6 +26,7 @@ function TableNode({
 }: {
   table: TableItem;
   isSelected: boolean;
+  hasCollision: boolean;
   onSelect: () => void;
   onChange: (patch: Partial<TableItem>) => void;
   stageWidth: number;
@@ -40,9 +42,21 @@ function TableNode({
     }
   }, [isSelected]);
 
-  const fill = table.isWindowSeat ? "#bfdbfe" : table.shape === "CIRCLE" ? "#fde68a" : "#bbf7d0";
-  const stroke = isSelected ? "#2563eb" : "#64748b";
+  const fill = !table.isActive
+    ? "#e5e2dd"
+    : table.isWindowSeat
+    ? "#bfdbfe"
+    : table.shape === "CIRCLE"
+    ? "#fde68a"
+    : "#bbf7d0";
+
+  const stroke = isSelected ? "#2563eb" : hasCollision ? "#dc2626" : "#64748b";
   const snap = (v: number) => Math.round(v / GRID) * GRID;
+
+  const minX = CHAIR_PAD;
+  const minY = CHAIR_PAD;
+  const maxX = stageWidth - table.width - CHAIR_PAD;
+  const maxY = stageHeight - table.height - CHAIR_PAD;
 
   return (
     <>
@@ -55,12 +69,12 @@ function TableNode({
         onClick={onSelect}
         onTap={onSelect}
         dragBoundFunc={(pos) => ({
-          x: Math.max(0, Math.min(stageWidth - table.width, pos.x)),
-          y: Math.max(0, Math.min(stageHeight - table.height, pos.y)),
+          x: Math.max(minX, Math.min(maxX, pos.x)),
+          y: Math.max(minY, Math.min(maxY, pos.y)),
         })}
         onDragEnd={(e) => {
-          const x = Math.max(0, Math.min(stageWidth - table.width, snap(e.target.x())));
-          const y = Math.max(0, Math.min(stageHeight - table.height, snap(e.target.y())));
+          const x = Math.max(minX, Math.min(maxX, snap(e.target.x())));
+          const y = Math.max(minY, Math.min(maxY, snap(e.target.y())));
           e.target.position({ x, y });
           onChange({ x, y });
         }}
@@ -72,45 +86,19 @@ function TableNode({
           node.scaleY(1);
           const newW = Math.max(40, snap(table.width * scaleX));
           const newH = Math.max(40, snap(table.height * scaleY));
-          const x = Math.max(0, Math.min(stageWidth - newW, snap(node.x())));
-          const y = Math.max(0, Math.min(stageHeight - newH, snap(node.y())));
+          const x = Math.max(CHAIR_PAD, Math.min(stageWidth - newW - CHAIR_PAD, snap(node.x())));
+          const y = Math.max(CHAIR_PAD, Math.min(stageHeight - newH - CHAIR_PAD, snap(node.y())));
           node.position({ x, y });
           onChange({ x, y, width: newW, height: newH, rotation: node.rotation() });
         }}
       >
-        {table.shape === "CIRCLE" ? (
-          <Circle
-            x={table.width / 2}
-            y={table.height / 2}
-            radius={Math.min(table.width, table.height) / 2}
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={isSelected ? 2 : 1}
-          />
-        ) : (
-          <Rect
-            width={table.width}
-            height={table.height}
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={isSelected ? 2 : 1}
-            cornerRadius={table.shape === "SQUARE" ? 4 : 6}
-          />
-        )}
-        <Text
-          text={`${table.label}\n${table.capacity}p`}
-          width={table.width}
-          height={table.height}
-          align="center"
-          verticalAlign="middle"
-          fontSize={11}
-          fill="#1e293b"
-          fontStyle="bold"
-          listening={false}
+        <TableShape
+          table={table}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={isSelected ? 2 : 1}
+          showWarning={hasCollision && !isSelected}
         />
-        {table.isWindowSeat && (
-          <Text text="🪟" x={table.width - 16} y={2} fontSize={12} listening={false} />
-        )}
       </Group>
       {isSelected && (
         <Transformer
@@ -140,6 +128,25 @@ function WallLine({ wall, onRemove, tool }: { wall: Wall; onRemove: () => void; 
   );
 }
 
+const GHOST_W = 80;
+const GHOST_H = 80;
+const GHOST_TABLE: TableItem = {
+  id: "__ghost__",
+  label: "T?",
+  shape: "RECTANGLE",
+  x: 0,
+  y: 0,
+  width: GHOST_W,
+  height: GHOST_H,
+  rotation: 0,
+  capacity: 4,
+  minCapacity: 1,
+  isWindowSeat: false,
+  isActive: true,
+  notes: "",
+  floorId: "",
+};
+
 export default function FloorCanvas({ width, height, bgColor }: Props) {
   const {
     tables, walls, selectedId, tool,
@@ -148,12 +155,15 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
 
   const stageRef = useRef<Konva.Stage>(null);
   const wallStart = useRef<{ x: number; y: number } | null>(null);
-  const uid = useId();
+  const newId = () =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const [previewLine, setPreviewLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
 
   const snap = (v: number) => Math.round(v / GRID) * GRID;
 
-  // Keyboard shortcuts: Delete, Escape, Ctrl+Z, Ctrl+Y
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
@@ -177,34 +187,55 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
     return () => window.removeEventListener("keydown", handler);
   }, [selectedId, removeTable, setSelectedId, undo, redo]);
 
+  useEffect(() => {
+    if (tool !== "table") setGhostPos(null);
+    if (tool !== "wall") {
+      wallStart.current = null;
+      setPreviewLine(null);
+    }
+  }, [tool]);
+
+  const clampGhost = (pos: { x: number; y: number }) => ({
+    x: Math.max(CHAIR_PAD, Math.min(width - GHOST_W - CHAIR_PAD, snap(pos.x - GHOST_W / 2))),
+    y: Math.max(CHAIR_PAD, Math.min(height - GHOST_H - CHAIR_PAD, snap(pos.y - GHOST_H / 2))),
+  });
+
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.target === e.target.getStage() || e.target.name() === "bg") {
         setSelectedId(null);
         if (tool === "table") {
           const pos = e.target.getStage()!.getPointerPosition()!;
-          const x = Math.max(0, Math.min(width - 80, snap(pos.x - 40)));
-          const y = Math.max(0, Math.min(height - 80, snap(pos.y - 40)));
+          const { x, y } = clampGhost(pos);
           const maxNum = tables.reduce((m, t) => {
             const n = parseInt(t.label.replace(/\D/g, ""), 10);
             return isNaN(n) ? m : Math.max(m, n);
           }, 0);
           addTable({
-            id: `${uid}-${Date.now()}`,
+            id: newId(),
             label: `T${maxNum + 1}`,
             shape: "RECTANGLE",
-            x, y,
-            width: 80, height: 80, rotation: 0, capacity: 4, minCapacity: 1,
-            isWindowSeat: false, isActive: true, notes: "", floorId: "",
+            x,
+            y,
+            width: GHOST_W,
+            height: GHOST_H,
+            rotation: 0,
+            capacity: 4,
+            minCapacity: 1,
+            isWindowSeat: false,
+            isActive: true,
+            notes: "",
+            floorId: "",
           });
         }
       }
     },
-    [tool, tables, uid, addTable, setSelectedId, width, height]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tool, tables, addTable, setSelectedId, width, height]
   );
 
   const handleMouseDown = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
+    () => {
       if (tool !== "wall") return;
       const pos = stageRef.current!.getPointerPosition()!;
       wallStart.current = { x: snap(pos.x), y: snap(pos.y) };
@@ -214,21 +245,26 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
   );
 
   const handleMouseMove = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (tool !== "wall" || !wallStart.current) return;
-      const pos = stageRef.current!.getPointerPosition()!;
-      setPreviewLine({
-        x1: wallStart.current.x,
-        y1: wallStart.current.y,
-        x2: snap(pos.x),
-        y2: snap(pos.y),
-      });
+    () => {
+      const pos = stageRef.current?.getPointerPosition();
+      if (!pos) return;
+      if (tool === "wall" && wallStart.current) {
+        setPreviewLine({
+          x1: wallStart.current.x,
+          y1: wallStart.current.y,
+          x2: snap(pos.x),
+          y2: snap(pos.y),
+        });
+      } else if (tool === "table") {
+        setGhostPos(clampGhost(pos));
+      }
     },
-    [tool]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tool, width, height]
   );
 
   const handleMouseUp = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
+    () => {
       if (tool !== "wall" || !wallStart.current) return;
       const pos = stageRef.current!.getPointerPosition()!;
       const x2 = snap(pos.x);
@@ -236,7 +272,7 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
       const dist = Math.hypot(x2 - wallStart.current.x, y2 - wallStart.current.y);
       if (dist >= 10) {
         addWall({
-          id: `wall-${uid}-${Date.now()}`,
+          id: newId(),
           x1: wallStart.current.x,
           y1: wallStart.current.y,
           x2,
@@ -247,14 +283,28 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
       wallStart.current = null;
       setPreviewLine(null);
     },
-    [tool, uid, addWall]
+    [tool, addWall]
   );
+
+  const handleMouseLeave = useCallback(() => {
+    setGhostPos(null);
+    if (wallStart.current) {
+      wallStart.current = null;
+      setPreviewLine(null);
+    }
+  }, []);
 
   const cursor =
     tool === "table" ? "crosshair" :
     tool === "wall" ? "crosshair" :
     tool === "erase" ? "cell" :
     "default";
+
+  const ghostTable: TableItem | null = ghostPos
+    ? { ...GHOST_TABLE, x: ghostPos.x, y: ghostPos.y }
+    : null;
+
+  const ghostCollision = ghostTable ? checkCollision(ghostTable, tables) : false;
 
   return (
     <Stage
@@ -265,6 +315,7 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
       style={{ cursor }}
     >
       <Layer>
@@ -291,6 +342,7 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
             key={t.id}
             table={t}
             isSelected={selectedId === t.id}
+            hasCollision={checkCollision(t, tables)}
             stageWidth={width}
             stageHeight={height}
             onSelect={() => {
@@ -300,6 +352,19 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
             onChange={(patch) => updateTable(t.id, patch)}
           />
         ))}
+
+        {ghostTable && (
+          <Group x={ghostTable.x} y={ghostTable.y} listening={false}>
+            <TableShape
+              table={ghostTable}
+              fill={ghostCollision ? "#fee2e2" : "#bbf7d0"}
+              stroke={ghostCollision ? "#dc2626" : "#16a34a"}
+              strokeWidth={1.5}
+              opacity={0.55}
+              showLabel={false}
+            />
+          </Group>
+        )}
       </Layer>
     </Stage>
   );

@@ -41,6 +41,7 @@ export default function RestaurantDetailPage() {
   const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
   const [bookingMsg, setBookingMsg] = useState("");
   const [bookingErr, setBookingErr] = useState("");
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
     api.get(`/restaurants/${restaurantId}`).then(({ data }) => {
@@ -48,6 +49,19 @@ export default function RestaurantDetailPage() {
       if (data.floors?.length) loadFloor(data.floors[0].id);
     });
   }, [restaurantId]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [lightbox]);
 
   async function loadFloor(id: string) {
     const { data } = await api.get(`/floors/${id}`);
@@ -80,7 +94,9 @@ export default function RestaurantDetailPage() {
         if (guest.phone.trim()) payload.guestPhone = guest.phone.trim();
       }
       await api.post("/reservations", payload);
-      setBookingMsg("Reservation confirmed!");
+      setBookingMsg(
+        "Request sent. The restaurant will review your reservation — you'll receive an email once it's accepted."
+      );
       setSelectedTable(null);
       if (!user) setGuest({ name: "", email: "", phone: "" });
     } catch (err: unknown) {
@@ -192,11 +208,32 @@ export default function RestaurantDetailPage() {
             </h3>
 
             {selectedTable ? (
-              <div style={{ padding: "0.75rem 1rem", background: "#fef2ec", border: "1px solid rgba(196,65,12,0.2)", borderRadius: "8px", marginBottom: "1.25rem" }}>
-                <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#c4410c" }}>Table {selectedTable.label}</p>
-                <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginTop: "0.125rem" }}>
-                  Up to {selectedTable.capacity} guests{selectedTable.isWindowSeat ? " · Window seat" : ""}
-                </p>
+              <div style={{ background: "#fef2ec", border: "1px solid rgba(196,65,12,0.2)", borderRadius: "8px", marginBottom: "1.25rem", overflow: "hidden" }}>
+                {selectedTable.imageUrl && (
+                  <button
+                    onClick={() => setLightbox(selectedTable.imageUrl || null)}
+                    title="Click to enlarge"
+                    style={{ display: "block", width: "100%", padding: 0, border: "none", background: "transparent", cursor: "zoom-in" }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedTable.imageUrl}
+                      alt={`Table ${selectedTable.label}`}
+                      style={{ display: "block", width: "100%", height: "150px", objectFit: "cover" }}
+                    />
+                  </button>
+                )}
+                <div style={{ padding: "0.75rem 1rem" }}>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#c4410c" }}>Table {selectedTable.label}</p>
+                  <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginTop: "0.125rem" }}>
+                    Up to {selectedTable.capacity} guests{selectedTable.isWindowSeat ? " · Window seat" : ""}
+                  </p>
+                  {selectedTable.notes && (
+                    <p style={{ fontSize: "0.75rem", color: "#5c5248", marginTop: "0.375rem", fontStyle: "italic" }}>
+                      {selectedTable.notes}
+                    </p>
+                  )}
+                </div>
               </div>
             ) : (
               <div style={{ padding: "0.75rem 1rem", background: "#f5f3ef", border: "1px solid rgba(24,22,15,0.08)", borderRadius: "8px", marginBottom: "1.25rem", textAlign: "center" }}>
@@ -285,6 +322,58 @@ export default function RestaurantDetailPage() {
           </div>
         </aside>
       </div>
+
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,12,8,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "2rem",
+            cursor: "zoom-out",
+          }}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox(null); }}
+            aria-label="Close"
+            style={{
+              position: "absolute",
+              top: "1.25rem",
+              right: "1.25rem",
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "#fff",
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              fontSize: "1.25rem",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            ×
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightbox}
+            alt="Table photo"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "min(90vw, 1100px)",
+              maxHeight: "90vh",
+              objectFit: "contain",
+              borderRadius: "8px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+              cursor: "default",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
