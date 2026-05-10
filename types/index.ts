@@ -13,6 +13,7 @@ export interface User {
 
 export interface Restaurant {
   id: string;
+  slug: string;
   name: string;
   description?: string;
   address: string;

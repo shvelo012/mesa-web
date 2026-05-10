@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# mesa-web
 
-## Getting Started
+Next.js 16 frontend for the Mesa restaurant reservation platform.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) — note: uses `proxy.ts` not `middleware.ts`
+- **react-konva** — interactive floor plan canvas
+- **Zustand** — auth store
+- **Axios** — API client (`lib/api.ts`)
+- **TypeScript**
+
+## Routes
+
+| Path | Role | Description |
+|------|------|-------------|
+| `/` | Public | Landing page |
+| `/restaurants` | Public | Browse all restaurants |
+| `/restaurants/[restaurantId]` | Public | Restaurant detail + reservation form |
+| `/login` | Public | Sign in |
+| `/register` | Public | Sign up |
+| `/reservations` | User | My reservations |
+| `/dashboard` | Restaurant owner | Manage reservations |
+| `/editor/[floorId]` | Restaurant owner | Floor plan editor |
+
+## Subdomain routing
+
+`proxy.ts` rewrites `[slug].mesa.ge` → `/restaurants/[slug]`.
+
+Set `NEXT_PUBLIC_ROOT_DOMAIN=mesa.ge` in production. Requires a wildcard DNS record `*.mesa.ge → server IP`.
+
+Locally the subdomain routing is inactive (localhost has no subdomain).
+
+## Guest reservations
+
+Guests can reserve without an account. The reservation form shows name/email/phone fields when not logged in. No redirect to login.
+
+## Env
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_ROOT_DOMAIN=mesa.ge
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev        # http://localhost:3000
+```
 
-## Learn More
+## Key files
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+proxy.ts                          — subdomain routing (Next.js 16 proxy convention)
+lib/api.ts                        — Axios instance, attaches Bearer token
+store/auth.store.ts               — Zustand auth state
+types/index.ts                    — shared TypeScript types
+components/canvas/FloorCanvas.tsx     — editor canvas (react-konva)
+components/canvas/FloorViewCanvas.tsx — read-only view canvas for booking
+```
