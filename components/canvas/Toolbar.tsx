@@ -1,7 +1,7 @@
 "use client";
 
 import { useCanvasStore, ToolMode } from "@/store/canvas.store";
-import { MousePointer2, Square, Minus, Eraser, Save, Loader2 } from "lucide-react";
+import { MousePointer2, Square, Minus, Eraser, Save, Loader2, Undo2, Redo2 } from "lucide-react";
 
 const TOOLS: { id: ToolMode; label: string; icon: React.ReactNode }[] = [
   { id: "select", label: "Select", icon: <MousePointer2 size={15} /> },
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function Toolbar({ onSave, saving }: Props) {
-  const { tool, setTool, isDirty } = useCanvasStore();
+  const { tool, setTool, isDirty, tables, past, future, undo, redo } = useCanvasStore();
 
   return (
     <div
@@ -34,6 +34,7 @@ export default function Toolbar({ onSave, saving }: Props) {
         <button
           key={t.id}
           onClick={() => setTool(t.id)}
+          title={t.label}
           style={{
             display: "flex",
             alignItems: "center",
@@ -56,11 +57,56 @@ export default function Toolbar({ onSave, saving }: Props) {
         </button>
       ))}
 
+      <div style={{ width: "1px", height: "20px", background: "rgba(24,22,15,0.1)", margin: "0 0.25rem" }} />
+
+      <button
+        onClick={undo}
+        disabled={past.length === 0}
+        title="Undo (Ctrl+Z)"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "0.375rem 0.5rem",
+          border: "1px solid rgba(24,22,15,0.1)",
+          borderRadius: "6px",
+          cursor: past.length > 0 ? "pointer" : "not-allowed",
+          background: "#f5f3ef",
+          color: past.length > 0 ? "#5c5248" : "#c8c4be",
+          transition: "color 0.15s",
+        }}
+      >
+        <Undo2 size={15} />
+      </button>
+
+      <button
+        onClick={redo}
+        disabled={future.length === 0}
+        title="Redo (Ctrl+Y)"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "0.375rem 0.5rem",
+          border: "1px solid rgba(24,22,15,0.1)",
+          borderRadius: "6px",
+          cursor: future.length > 0 ? "pointer" : "not-allowed",
+          background: "#f5f3ef",
+          color: future.length > 0 ? "#5c5248" : "#c8c4be",
+          transition: "color 0.15s",
+        }}
+      >
+        <Redo2 size={15} />
+      </button>
+
+      <span style={{ fontSize: "0.75rem", color: "#9a9088", marginLeft: "0.25rem" }}>
+        {tables.length} table{tables.length !== 1 ? "s" : ""}
+      </span>
+
       <div style={{ flex: 1 }} />
 
       <button
         onClick={onSave}
         disabled={!isDirty || saving}
+        title="Save (Ctrl+S)"
         style={{
           display: "flex",
           alignItems: "center",

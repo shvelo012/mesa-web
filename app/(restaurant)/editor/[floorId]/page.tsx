@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useAuthStore } from "@/store/auth.store";
@@ -16,10 +16,12 @@ export default function EditorPage() {
   const { floorId } = useParams<{ floorId: string }>();
   const { user, _hasHydrated } = useAuthStore();
   const router = useRouter();
-  const { setTables, setWalls, tables, walls, markClean } = useCanvasStore();
+  const { setTables, setWalls, markClean } = useCanvasStore();
   const [floor, setFloor] = useState<Floor | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const savingRef = useRef(saving);
+  savingRef.current = saving;
 
   useEffect(() => {
     if (!_hasHydrated) return;
@@ -31,7 +33,33 @@ export default function EditorPage() {
     });
   }, [floorId, user, _hasHydrated]);
 
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (useCanvasStore.getState().isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  // Ctrl+S to save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        const { isDirty } = useCanvasStore.getState();
+        if (isDirty && !savingRef.current) handleSave();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   async function handleSave() {
+    const { tables, walls } = useCanvasStore.getState();
     setSaving(true);
     try {
       await api.post(`/floors/${floorId}/layout`, { tables, walls });
@@ -55,7 +83,6 @@ export default function EditorPage() {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f5f3ef" }}>
-      {/* Editor top bar */}
       <div
         style={{
           background: "#ffffff",
@@ -105,10 +132,8 @@ export default function EditorPage() {
         )}
       </div>
 
-      {/* Toolbar */}
       <Toolbar onSave={handleSave} saving={saving} />
 
-      {/* Canvas + properties */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <div
           style={{

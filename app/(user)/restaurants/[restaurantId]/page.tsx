@@ -9,6 +9,27 @@ import { useAuthStore } from "@/store/auth.store";
 
 const FloorViewCanvas = dynamic(() => import("@/components/canvas/FloorViewCanvas"), { ssr: false });
 
+const TODAY = new Date().toISOString().split("T")[0];
+
+function Legend() {
+  const items = [
+    { color: "#dcfce7", border: "#a8a09a", label: "Available" },
+    { color: "#dbeafe", border: "#a8a09a", label: "Window seat" },
+    { color: "#fde8df", border: "#c4410c", label: "Selected" },
+    { color: "#e5e2dd", border: "#c8c4be", label: "Unavailable" },
+  ];
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", padding: "0.625rem 1rem", borderTop: "1px solid rgba(24,22,15,0.06)" }}>
+      {items.map((item) => (
+        <span key={item.label} style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.75rem", color: "#5c5248" }}>
+          <span style={{ display: "inline-block", width: 12, height: 12, background: item.color, border: `1px solid ${item.border}`, borderRadius: 2, flexShrink: 0 }} />
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function RestaurantDetailPage() {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const { user } = useAuthStore();
@@ -32,6 +53,8 @@ export default function RestaurantDetailPage() {
     const { data } = await api.get(`/floors/${id}`);
     setSelectedFloor(data);
     setSelectedTable(null);
+    setBookingMsg("");
+    setBookingErr("");
   }
 
   async function handleBook() {
@@ -40,6 +63,14 @@ export default function RestaurantDetailPage() {
       setBookingErr("Name and email are required");
       return;
     }
+    if (!booking.date) { setBookingErr("Please select a date"); return; }
+    if (!booking.startTime || !booking.endTime) { setBookingErr("Please set arrival and departure times"); return; }
+    if (booking.startTime >= booking.endTime) { setBookingErr("Departure must be after arrival"); return; }
+    if (booking.partySize > selectedTable.capacity) {
+      setBookingErr(`Table ${selectedTable.label} fits ${selectedTable.capacity} guests max`);
+      return;
+    }
+
     setBookingErr("");
     try {
       const payload: Record<string, unknown> = { tableId: selectedTable.id, ...booking, partySize: +booking.partySize };
@@ -71,7 +102,6 @@ export default function RestaurantDetailPage() {
 
   return (
     <div style={{ background: "#f5f3ef", minHeight: "100vh" }}>
-      {/* Nav */}
       <nav className="nav">
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem", height: "64px", display: "flex", alignItems: "center", gap: "1rem" }}>
           <button
@@ -85,7 +115,6 @@ export default function RestaurantDetailPage() {
         </div>
       </nav>
 
-      {/* Restaurant hero */}
       <div style={{ background: "#ffffff", borderBottom: "1px solid rgba(24,22,15,0.08)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem" }} className="anim-1">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
@@ -118,10 +147,8 @@ export default function RestaurantDetailPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem", display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
 
-        {/* Floor canvas */}
         <div style={{ flex: 1, minWidth: 0 }} className="anim-2" suppressHydrationWarning>
 
           {(restaurant.floors || []).length > 1 && (
@@ -145,18 +172,19 @@ export default function RestaurantDetailPage() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c4410c" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>Click a table to select it for booking</span>
               </div>
-              <div style={{ background: "#f9f7f4", display: "flex", justifyContent: "center", padding: "1rem" }}>
+              <div style={{ background: "#f9f7f4", padding: "1rem" }}>
                 <FloorViewCanvas
                   floor={selectedFloor}
                   selectedTableId={selectedTable?.id ?? null}
                   onSelectTable={setSelectedTable}
+                  partySize={booking.partySize}
                 />
               </div>
+              <Legend />
             </div>
           )}
         </div>
 
-        {/* Booking sidebar */}
         <aside style={{ width: "316px", flexShrink: 0 }} className="anim-3">
           <div className="card" style={{ padding: "1.5rem" }}>
             <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem", letterSpacing: "-0.01em" }}>
@@ -190,7 +218,14 @@ export default function RestaurantDetailPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
                 <label className="label">Date</label>
-                <input type="date" value={booking.date} onChange={(e) => setBooking((b) => ({ ...b, date: e.target.value }))} className="input" style={{ colorScheme: "light" }} />
+                <input
+                  type="date"
+                  min={TODAY}
+                  value={booking.date}
+                  onChange={(e) => setBooking((b) => ({ ...b, date: e.target.value }))}
+                  className="input"
+                  style={{ colorScheme: "light" }}
+                />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.625rem" }}>
                 <div>
@@ -204,7 +239,19 @@ export default function RestaurantDetailPage() {
               </div>
               <div>
                 <label className="label">Guests</label>
-                <input type="number" min={1} value={booking.partySize} onChange={(e) => setBooking((b) => ({ ...b, partySize: +e.target.value }))} className="input" />
+                <input
+                  type="number"
+                  min={1}
+                  value={booking.partySize}
+                  onChange={(e) => {
+                    setBooking((b) => ({ ...b, partySize: +e.target.value }));
+                    setSelectedTable(null);
+                  }}
+                  className="input"
+                />
+                <p style={{ fontSize: "0.75rem", color: "#9a9088", marginTop: "0.25rem" }}>
+                  Tables too small for your party are dimmed on the map
+                </p>
               </div>
               <div>
                 <label className="label">Special requests</label>
