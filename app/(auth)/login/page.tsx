@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, user } = useAuthStore();
+  const { login } = useAuthStore();
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -30,52 +30,56 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-6">Sign In</h1>
+    <div style={{ minHeight: "100vh", background: "#f5f3ef", display: "flex", flexDirection: "column" }}>
+      {/* Top nav */}
+      <div style={{ padding: "1.25rem 1.5rem" }}>
+        <Link href="/" style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", textDecoration: "none", letterSpacing: "-0.02em" }}>
+          mesa
+        </Link>
+      </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
-            {error}
-          </div>
-        )}
+      {/* Form */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem 1rem" }}>
+        <div className="anim-1 card" style={{ opacity: 0, width: "100%", maxWidth: "420px", padding: "2.5rem" }}>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div style={{ marginBottom: "2rem" }}>
+            <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.375rem" }}>
+              Welcome back
+            </h1>
+            <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>
+              Sign in to your Mesa account
+            </p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
 
-        <p className="mt-4 text-sm text-slate-500 text-center">
-          No account?{" "}
-          <Link href="/register" className="text-blue-600 hover:underline">
-            Register
-          </Link>
-        </p>
+          {error && (
+            <div style={{ padding: "0.75rem 1rem", background: "#fef2f2", border: "1px solid rgba(220,38,38,0.2)", borderRadius: "8px", color: "#dc2626", fontSize: "0.875rem", marginBottom: "1.25rem" }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.125rem" }}>
+            <div>
+              <label className="label">Email address</label>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="you@example.com" />
+            </div>
+            <div>
+              <label className="label">Password</label>
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input" placeholder="••••••••" />
+            </div>
+            <button type="submit" className="btn btn-primary btn-md" disabled={loading} style={{ width: "100%", marginTop: "0.375rem" }}>
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+
+          <div style={{ marginTop: "1.75rem", paddingTop: "1.75rem", borderTop: "1px solid rgba(24,22,15,0.08)", textAlign: "center" }}>
+            <p style={{ fontSize: "0.9375rem", color: "#5c5248" }}>
+              Don't have an account?{" "}
+              <Link href="/register" style={{ color: "#c4410c", fontWeight: 600, textDecoration: "none" }}>
+                Sign up free
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

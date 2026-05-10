@@ -19,8 +19,8 @@ export default function FloorViewCanvas({ floor, selectedTableId, onSelectTable 
           <Line
             key={w.id}
             points={[w.x1, w.y1, w.x2, w.y2]}
-            stroke="#475569"
-            strokeWidth={6}
+            stroke="#8c8480"
+            strokeWidth={5}
             lineCap="round"
           />
         ))}
@@ -29,15 +29,15 @@ export default function FloorViewCanvas({ floor, selectedTableId, onSelectTable 
           const isSelected = t.id === selectedTableId;
           const available = t.isActive;
           const fill = !available
-            ? "#e2e8f0"
+            ? "#e5e2dd"
             : isSelected
-            ? "#bfdbfe"
+            ? "#fde8df"
             : t.isWindowSeat
-            ? "#e0f2fe"
+            ? "#dbeafe"
             : t.shape === "CIRCLE"
             ? "#fef9c3"
             : "#dcfce7";
-          const stroke = isSelected ? "#2563eb" : available ? "#64748b" : "#cbd5e1";
+          const stroke = isSelected ? "#c4410c" : available ? "#a8a09a" : "#c8c4be";
 
           return (
             <Group
@@ -55,7 +55,7 @@ export default function FloorViewCanvas({ floor, selectedTableId, onSelectTable 
                   radius={Math.min(t.width, t.height) / 2}
                   fill={fill}
                   stroke={stroke}
-                  strokeWidth={isSelected ? 2.5 : 1}
+                  strokeWidth={isSelected ? 2 : 1}
                 />
               ) : (
                 <Rect
@@ -63,8 +63,8 @@ export default function FloorViewCanvas({ floor, selectedTableId, onSelectTable 
                   height={t.height}
                   fill={fill}
                   stroke={stroke}
-                  strokeWidth={isSelected ? 2.5 : 1}
-                  cornerRadius={4}
+                  strokeWidth={isSelected ? 2 : 1}
+                  cornerRadius={3}
                 />
               )}
               <Text
@@ -73,7 +73,7 @@ export default function FloorViewCanvas({ floor, selectedTableId, onSelectTable 
                 height={t.height}
                 align="center"
                 verticalAlign="middle"
-                fontSize={11}
+                fontSize={10}
                 fill={available ? "#1e293b" : "#94a3b8"}
                 fontStyle="bold"
                 listening={false}

@@ -3,14 +3,37 @@
 import { useCanvasStore } from "@/store/canvas.store";
 import { TableShape } from "@/types";
 
+const inputSt: React.CSSProperties = {
+  width: "100%",
+  background: "#ffffff",
+  border: "1px solid rgba(24,22,15,0.14)",
+  borderRadius: "6px",
+  color: "#18160f",
+  padding: "0.4rem 0.625rem",
+  fontSize: "0.8125rem",
+  fontFamily: "'Plus Jakarta Sans', sans-serif",
+  fontWeight: 400,
+  outline: "none",
+};
+
+const labelSt: React.CSSProperties = {
+  display: "block",
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  color: "#9a9088",
+  marginBottom: "0.3rem",
+};
+
 export default function TableProperties() {
   const { tables, selectedId, updateTable, removeTable, setSelectedId } = useCanvasStore();
   const table = tables.find((t) => t.id === selectedId);
 
   if (!table) {
     return (
-      <div className="p-4 text-sm text-slate-400 italic">
-        Click a table to edit its properties.
+      <div style={{ padding: "1.5rem 1rem", textAlign: "center" }}>
+        <p style={{ fontSize: "0.8125rem", color: "#9a9088", lineHeight: 1.5 }}>
+          Click a table on the canvas to edit its properties.
+        </p>
       </div>
     );
   }
@@ -18,125 +41,75 @@ export default function TableProperties() {
   const update = (patch: Parameters<typeof updateTable>[1]) => updateTable(table.id, patch);
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-800">Table Properties</h3>
+    <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "#18160f" }}>Table {table.label}</span>
         <button
           onClick={() => { removeTable(table.id); setSelectedId(null); }}
-          className="text-red-500 text-xs hover:text-red-700"
+          style={{ fontSize: "0.75rem", fontWeight: 600, background: "#fef2f2", border: "none", borderRadius: "4px", color: "#dc2626", cursor: "pointer", padding: "0.25rem 0.5rem", fontFamily: "inherit" }}
         >
           Delete
         </button>
       </div>
 
+      <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
+
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Label</label>
-        <input
-          className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-          value={table.label}
-          onChange={(e) => update({ label: e.target.value })}
-        />
+        <label style={labelSt}>Label</label>
+        <input style={inputSt} value={table.label} onChange={(e) => update({ label: e.target.value })} />
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Shape</label>
-        <select
-          className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-          value={table.shape}
-          onChange={(e) => update({ shape: e.target.value as TableShape })}
-        >
+        <label style={labelSt}>Shape</label>
+        <select style={inputSt} value={table.shape} onChange={(e) => update({ shape: e.target.value as TableShape })}>
           <option value="RECTANGLE">Rectangle</option>
           <option value="SQUARE">Square</option>
           <option value="CIRCLE">Circle</option>
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Width</label>
-          <input
-            type="number"
-            className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-            value={table.width}
-            onChange={(e) => update({ width: +e.target.value })}
-          />
+          <label style={labelSt}>Width</label>
+          <input type="number" style={inputSt} value={table.width} onChange={(e) => update({ width: +e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Height</label>
-          <input
-            type="number"
-            className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-            value={table.height}
-            onChange={(e) => update({ height: +e.target.value })}
-          />
+          <label style={labelSt}>Height</label>
+          <input type="number" style={inputSt} value={table.height} onChange={(e) => update({ height: +e.target.value })} />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Rotation (°)</label>
-          <input
-            type="number"
-            className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-            value={table.rotation}
-            onChange={(e) => update({ rotation: +e.target.value })}
-          />
+          <label style={labelSt}>Rotation °</label>
+          <input type="number" style={inputSt} value={table.rotation} onChange={(e) => update({ rotation: +e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Capacity</label>
-          <input
-            type="number"
-            min={1}
-            className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-            value={table.capacity}
-            onChange={(e) => update({ capacity: +e.target.value })}
-          />
+          <label style={labelSt}>Capacity</label>
+          <input type="number" min={1} style={inputSt} value={table.capacity} onChange={(e) => update({ capacity: +e.target.value })} />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Min Party Size</label>
-        <input
-          type="number"
-          min={1}
-          className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-          value={table.minCapacity}
-          onChange={(e) => update({ minCapacity: +e.target.value })}
-        />
+        <label style={labelSt}>Min Party Size</label>
+        <input type="number" min={1} style={inputSt} value={table.minCapacity} onChange={(e) => update({ minCapacity: +e.target.value })} />
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="windowSeat"
-          checked={table.isWindowSeat}
-          onChange={(e) => update({ isWindowSeat: e.target.checked })}
-        />
-        <label htmlFor="windowSeat" className="text-sm text-slate-700">
-          Window seat
-        </label>
-      </div>
+      <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="isActive"
-          checked={table.isActive}
-          onChange={(e) => update({ isActive: e.target.checked })}
-        />
-        <label htmlFor="isActive" className="text-sm text-slate-700">
-          Active (bookable)
+      {[
+        { id: "windowSeat", checked: table.isWindowSeat, label: "Window seat", onChange: (v: boolean) => update({ isWindowSeat: v }) },
+        { id: "isActive", checked: table.isActive, label: "Active (bookable)", onChange: (v: boolean) => update({ isActive: v }) },
+      ].map(({ id, checked, label, onChange }) => (
+        <label key={id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+          <input type="checkbox" id={id} checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ accentColor: "#c4410c", width: "14px", height: "14px" }} />
+          <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#5c5248" }}>{label}</span>
         </label>
-      </div>
+      ))}
 
       <div>
-        <label className="block text-xs text-slate-500 mb-1">Notes</label>
-        <textarea
-          className="w-full border border-slate-200 rounded px-2 py-1 text-sm"
-          rows={2}
-          value={table.notes || ""}
-          onChange={(e) => update({ notes: e.target.value })}
-        />
+        <label style={labelSt}>Notes</label>
+        <textarea style={{ ...inputSt, resize: "none" }} rows={2} value={table.notes || ""} onChange={(e) => update({ notes: e.target.value })} placeholder="e.g. near window, accessible" />
       </div>
     </div>
   );
