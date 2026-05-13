@@ -148,7 +148,7 @@ export default function RestaurantDetailPage() {
       <nav className="nav">
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem", height: "64px", display: "flex", alignItems: "center", gap: "1rem" }}>
           <button
-            onClick={() => router.back()}
+            onClick={() => user?.role === "RESTAURANT_OWNER" ? router.push("/dashboard") : router.back()}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#9a9088", fontSize: "0.875rem", fontWeight: 500, fontFamily: "inherit", display: "flex", alignItems: "center", gap: "0.35rem" }}
           >
             ← Back
