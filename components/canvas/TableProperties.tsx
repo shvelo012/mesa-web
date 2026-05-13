@@ -49,97 +49,232 @@ const labelSt: React.CSSProperties = {
   marginBottom: "0.3rem",
 };
 
+const sectionSt: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.75rem",
+};
+
 export default function TableProperties() {
-  const { tables, selectedId, updateTable, removeTable, setSelectedId } = useCanvasStore();
+  const { tables, selectedId, updateTable, removeTable, duplicateTable, setSelectedId } = useCanvasStore();
   const table = tables.find((t) => t.id === selectedId);
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!table) {
     return (
-      <div style={{ padding: "1.5rem 1rem", textAlign: "center" }}>
+      <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
+        <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem", opacity: 0.3 }}>⬡</div>
         <p style={{ fontSize: "0.8125rem", color: "#9a9088", lineHeight: 1.5 }}>
-          Click a table on the canvas to edit its properties.
+          Click a table to edit properties.
+        </p>
+        <p style={{ fontSize: "0.75rem", color: "#c8c4be", marginTop: "0.5rem", lineHeight: 1.4 }}>
+          Del/Backspace — delete selected
         </p>
       </div>
     );
   }
 
   const update = (patch: Parameters<typeof updateTable>[1]) => updateTable(table.id, patch);
+  const isCircle = table.shape === "CIRCLE";
+  const capacityWarning = table.minCapacity > table.capacity;
+  const diameter = Math.max(table.width, table.height);
 
   return (
-    <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "#18160f" }}>Table {table.label}</span>
-        <button
-          onClick={() => { removeTable(table.id); setSelectedId(null); }}
-          style={{ fontSize: "0.75rem", fontWeight: 600, background: "#fef2f2", border: "none", borderRadius: "4px", color: "#dc2626", cursor: "pointer", padding: "0.25rem 0.5rem", fontFamily: "inherit" }}
-        >
-          Delete
-        </button>
+    <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+        <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "#18160f" }}>
+          Table {table.label}
+        </span>
+        <div style={{ display: "flex", gap: "0.375rem" }}>
+          <button
+            onClick={() => { duplicateTable(table.id); }}
+            title="Duplicate table"
+            style={{ fontSize: "0.75rem", fontWeight: 600, background: "#f0ede8", border: "none", borderRadius: "4px", color: "#5c5248", cursor: "pointer", padding: "0.25rem 0.5rem", fontFamily: "inherit" }}
+          >
+            Copy
+          </button>
+          <button
+            onClick={() => { removeTable(table.id); setSelectedId(null); }}
+            title="Delete table (Del)"
+            style={{ fontSize: "0.75rem", fontWeight: 600, background: "#fef2f2", border: "none", borderRadius: "4px", color: "#dc2626", cursor: "pointer", padding: "0.25rem 0.5rem", fontFamily: "inherit" }}
+          >
+            Delete
+          </button>
+        </div>
       </div>
 
       <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
 
-      <div>
-        <label style={labelSt}>Label</label>
-        <input style={inputSt} value={table.label} onChange={(e) => update({ label: e.target.value })} />
-      </div>
-
-      <div>
-        <label style={labelSt}>Shape</label>
-        <select style={inputSt} value={table.shape} onChange={(e) => update({ shape: e.target.value as TableShape })}>
-          <option value="RECTANGLE">Rectangle</option>
-          <option value="SQUARE">Square</option>
-          <option value="CIRCLE">Circle</option>
-        </select>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+      {/* Identity */}
+      <div style={sectionSt}>
         <div>
-          <label style={labelSt}>Width</label>
-          <input type="number" style={inputSt} value={table.width} onChange={(e) => update({ width: +e.target.value })} />
+          <label style={labelSt}>Label</label>
+          <input style={inputSt} value={table.label} onChange={(e) => update({ label: e.target.value })} />
         </div>
-        <div>
-          <label style={labelSt}>Height</label>
-          <input type="number" style={inputSt} value={table.height} onChange={(e) => update({ height: +e.target.value })} />
-        </div>
-      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
         <div>
-          <label style={labelSt}>Rotation °</label>
-          <input type="number" style={inputSt} value={table.rotation} onChange={(e) => update({ rotation: +e.target.value })} />
+          <label style={labelSt}>Shape</label>
+          <select style={inputSt} value={table.shape} onChange={(e) => {
+            const shape = e.target.value as TableShape;
+            if (shape === "CIRCLE") {
+              const d = Math.max(table.width, table.height);
+              update({ shape, width: d, height: d });
+            } else if (shape === "SQUARE") {
+              const s = Math.max(table.width, table.height);
+              update({ shape, width: s, height: s });
+            } else {
+              update({ shape });
+            }
+          }}>
+            <option value="RECTANGLE">Rectangle</option>
+            <option value="SQUARE">Square</option>
+            <option value="CIRCLE">Circle</option>
+          </select>
         </div>
-        <div>
-          <label style={labelSt}>Capacity</label>
-          <input type="number" min={1} style={inputSt} value={table.capacity} onChange={(e) => update({ capacity: +e.target.value })} />
-        </div>
-      </div>
-
-      <div>
-        <label style={labelSt}>Min Party Size</label>
-        <input type="number" min={1} style={inputSt} value={table.minCapacity} onChange={(e) => update({ minCapacity: +e.target.value })} />
       </div>
 
       <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
 
-      {[
-        { id: "windowSeat", checked: table.isWindowSeat, label: "Window seat", onChange: (v: boolean) => update({ isWindowSeat: v }) },
-        { id: "isActive", checked: table.isActive, label: "Active (bookable)", onChange: (v: boolean) => update({ isActive: v }) },
-      ].map(({ id, checked, label, onChange }) => (
-        <label key={id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-          <input type="checkbox" id={id} checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ accentColor: "#c4410c", width: "14px", height: "14px" }} />
-          <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#5c5248" }}>{label}</span>
-        </label>
-      ))}
+      {/* Dimensions */}
+      <div style={sectionSt}>
+        {isCircle ? (
+          <div>
+            <label style={labelSt}>Diameter</label>
+            <input
+              type="number"
+              min={40}
+              style={inputSt}
+              value={diameter}
+              onChange={(e) => {
+                const d = Math.max(40, +e.target.value);
+                update({ width: d, height: d });
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+            <div>
+              <label style={labelSt}>Width</label>
+              <input
+                type="number"
+                min={40}
+                style={inputSt}
+                value={table.width}
+                onChange={(e) => update({ width: Math.max(40, +e.target.value) })}
+              />
+            </div>
+            <div>
+              <label style={labelSt}>Height</label>
+              <input
+                type="number"
+                min={40}
+                style={inputSt}
+                value={table.height}
+                onChange={(e) => update({ height: Math.max(40, +e.target.value) })}
+              />
+            </div>
+          </div>
+        )}
 
+        <div>
+          <label style={{ ...labelSt, marginBottom: "0.5rem" }}>
+            Rotation — {table.rotation}°
+          </label>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <input
+              type="range"
+              min={0}
+              max={360}
+              step={1}
+              value={table.rotation}
+              onChange={(e) => update({ rotation: +e.target.value })}
+              style={{ flex: 1, accentColor: "#c4410c" }}
+            />
+            <input
+              type="number"
+              min={0}
+              max={360}
+              style={{ ...inputSt, width: "56px" }}
+              value={table.rotation}
+              onChange={(e) => update({ rotation: Math.min(360, Math.max(0, +e.target.value)) })}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
+
+      {/* Capacity */}
+      <div style={sectionSt}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+          <div>
+            <label style={labelSt}>Capacity</label>
+            <input
+              type="number"
+              min={1}
+              style={{ ...inputSt, borderColor: capacityWarning ? "#dc2626" : undefined }}
+              value={table.capacity}
+              onChange={(e) => update({ capacity: Math.max(1, +e.target.value) })}
+            />
+          </div>
+          <div>
+            <label style={labelSt}>Min Party</label>
+            <input
+              type="number"
+              min={1}
+              style={{ ...inputSt, borderColor: capacityWarning ? "#dc2626" : undefined }}
+              value={table.minCapacity}
+              onChange={(e) => update({ minCapacity: Math.max(1, +e.target.value) })}
+            />
+          </div>
+        </div>
+        {capacityWarning && (
+          <p style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: "-0.25rem" }}>
+            Min party size exceeds capacity.
+          </p>
+        )}
+      </div>
+
+      <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
+
+      {/* Flags */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        {[
+          { id: "windowSeat", checked: table.isWindowSeat, label: "Window seat", onChange: (v: boolean) => update({ isWindowSeat: v }) },
+          { id: "isActive", checked: table.isActive, label: "Active (bookable)", onChange: (v: boolean) => update({ isActive: v }) },
+        ].map(({ id, checked, label, onChange }) => (
+          <label key={id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              id={id}
+              checked={checked}
+              onChange={(e) => onChange(e.target.checked)}
+              style={{ accentColor: "#c4410c", width: "14px", height: "14px" }}
+            />
+            <span style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#5c5248" }}>{label}</span>
+          </label>
+        ))}
+      </div>
+
+      <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
+
+      {/* Notes */}
       <div>
         <label style={labelSt}>Notes</label>
-        <textarea style={{ ...inputSt, resize: "none" }} rows={2} value={table.notes || ""} onChange={(e) => update({ notes: e.target.value })} placeholder="e.g. near window, accessible" />
+        <textarea
+          style={{ ...inputSt, resize: "none" }}
+          rows={2}
+          value={table.notes || ""}
+          onChange={(e) => update({ notes: e.target.value })}
+          placeholder="e.g. near window, accessible"
+        />
       </div>
 
       <div style={{ height: "1px", background: "rgba(24,22,15,0.07)" }} />
 
+      {/* Photo */}
       <div>
         <label style={labelSt}>Photo</label>
         {table.imageUrl ? (

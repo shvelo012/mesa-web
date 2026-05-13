@@ -12,16 +12,38 @@ import TableProperties from "@/components/canvas/TableProperties";
 
 const FloorCanvas = dynamic(() => import("@/components/canvas/FloorCanvas"), { ssr: false });
 
+const TOOL_TIPS: Record<string, string> = {
+  select: "Click a table to select it · Del / Backspace removes selected · Esc deselects",
+  table: "Click anywhere on the canvas to place a new table · Ghost preview shows placement",
+  wall: "Click and drag to draw a wall segment · Walls snap to 10 px grid",
+  erase: "Click any table or wall to remove it instantly",
+};
+
+const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+
 export default function EditorPage() {
   const { floorId } = useParams<{ floorId: string }>();
   const { user, _hasHydrated } = useAuthStore();
   const router = useRouter();
   const { setTables, setWalls, markClean } = useCanvasStore();
+  const tool = useCanvasStore((s) => s.tool);
+
   const [floor, setFloor] = useState<Floor | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [zoom, setZoom] = useState(1);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [tipDismissed, setTipDismissed] = useState(false);
+  const prevToolRef = useRef(tool);
   const savingRef = useRef(saving);
   savingRef.current = saving;
+
+  useEffect(() => {
+    if (prevToolRef.current !== tool) {
+      setTipDismissed(false);
+      prevToolRef.current = tool;
+    }
+  }, [tool]);
 
   useEffect(() => {
     if (!_hasHydrated) return;
@@ -32,18 +54,6 @@ export default function EditorPage() {
       setWalls(data.walls || []);
     });
   }, [floorId, user, _hasHydrated]);
-
-  // Warn before leaving with unsaved changes
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (useCanvasStore.getState().isDirty) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, []);
 
   // Ctrl+S to save
   useEffect(() => {
@@ -58,7 +68,7 @@ export default function EditorPage() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     const { tables, walls } = useCanvasStore.getState();
     setSaving(true);
     try {
@@ -66,11 +76,40 @@ export default function EditorPage() {
       markClean();
       setSaveMsg("Saved");
       setTimeout(() => setSaveMsg(""), 2000);
+      return true;
     } catch {
       setSaveMsg("Save failed");
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleBack() {
+    if (useCanvasStore.getState().isDirty) {
+      setShowUnsavedModal(true);
+    } else {
+      router.push("/dashboard");
+    }
+  }
+
+  async function handleSaveAndLeave() {
+    const ok = await handleSave();
+    if (ok) router.push("/dashboard");
+    else setShowUnsavedModal(false);
+  }
+
+  function stepZoom(dir: 1 | -1) {
+    setZoom((z) => {
+      const idx = ZOOM_LEVELS.indexOf(z);
+      if (idx === -1) {
+        const next = ZOOM_LEVELS.find((l) => dir === 1 ? l > z : l < z);
+        const prev = [...ZOOM_LEVELS].reverse().find((l) => dir === -1 ? l < z : l > z);
+        return (dir === 1 ? next : prev) ?? z;
+      }
+      const ni = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, idx + dir));
+      return ZOOM_LEVELS[ni];
+    });
   }
 
   if (!floor) {
@@ -83,6 +122,46 @@ export default function EditorPage() {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f5f3ef" }}>
+
+      {/* Unsaved changes modal */}
+      {showUnsavedModal && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowUnsavedModal(false); }}
+        >
+          <div style={{ background: "#ffffff", borderRadius: "12px", padding: "1.75rem", width: "360px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f", marginBottom: "0.5rem" }}>
+              Unsaved changes
+            </h3>
+            <p style={{ fontSize: "0.875rem", color: "#5c5248", marginBottom: "1.25rem", lineHeight: 1.5 }}>
+              You have unsaved changes to this floor layout. What would you like to do?
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button
+                onClick={handleSaveAndLeave}
+                disabled={saving}
+                style={{ padding: "0.625rem 1rem", background: "#c4410c", color: "#fff", border: "none", borderRadius: "8px", fontFamily: "inherit", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer" }}
+              >
+                {saving ? "Saving…" : "Save & Leave"}
+              </button>
+              <button
+                onClick={() => router.push("/dashboard")}
+                style={{ padding: "0.625rem 1rem", background: "#fef2f2", color: "#dc2626", border: "none", borderRadius: "8px", fontFamily: "inherit", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer" }}
+              >
+                Discard changes
+              </button>
+              <button
+                onClick={() => setShowUnsavedModal(false)}
+                style={{ padding: "0.625rem 1rem", background: "#f5f3ef", color: "#5c5248", border: "none", borderRadius: "8px", fontFamily: "inherit", fontWeight: 500, fontSize: "0.875rem", cursor: "pointer" }}
+              >
+                Stay on page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <div
         style={{
           background: "#ffffff",
@@ -96,7 +175,7 @@ export default function EditorPage() {
         }}
       >
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={handleBack}
           style={{ background: "none", border: "none", cursor: "pointer", color: "#9a9088", fontSize: "0.875rem", fontWeight: 500, fontFamily: "inherit", display: "flex", alignItems: "center", gap: "0.35rem", transition: "color 0.15s" }}
           onMouseEnter={e => (e.currentTarget.style.color = "#18160f")}
           onMouseLeave={e => (e.currentTarget.style.color = "#9a9088")}
@@ -123,6 +202,10 @@ export default function EditorPage() {
           {floor.sectionType}
         </span>
 
+        <span style={{ fontSize: "0.75rem", color: "#9a9088" }}>
+          {floor.width} × {floor.height} px
+        </span>
+
         <div style={{ flex: 1 }} />
 
         {saveMsg && (
@@ -134,26 +217,40 @@ export default function EditorPage() {
 
       <Toolbar onSave={handleSave} saving={saving} />
 
-      <div
-        style={{
-          padding: "0.5rem 1rem",
-          background: "#fffaf5",
-          borderBottom: "1px solid rgba(196,65,12,0.15)",
-          fontSize: "0.75rem",
-          color: "#5c5248",
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          flexShrink: 0,
-        }}
-      >
-        <span>
-          <strong style={{ color: "#c4410c" }}>Tip:</strong> keep walkways clear — red dashed ring means
-          tables are too close. Long sides face neighbors; window-flag tables along walls.
-        </span>
-      </div>
+      {/* Contextual tip bar */}
+      {!tipDismissed && (
+        <div
+          style={{
+            padding: "0.4rem 1rem",
+            background: "#fffaf5",
+            borderBottom: "1px solid rgba(196,65,12,0.12)",
+            fontSize: "0.75rem",
+            color: "#5c5248",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            flexShrink: 0,
+          }}
+        >
+          <span>
+            <strong style={{ color: "#c4410c", marginRight: "0.375rem" }}>
+              {tool.charAt(0).toUpperCase() + tool.slice(1)}:
+            </strong>
+            {TOOL_TIPS[tool]}
+          </span>
+          <button
+            onClick={() => setTipDismissed(true)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#9a9088", fontSize: "0.875rem", padding: "0 0.25rem", lineHeight: 1, fontFamily: "inherit" }}
+            title="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Canvas area */}
         <div
           style={{
             flex: 1,
@@ -165,21 +262,66 @@ export default function EditorPage() {
             background: "#edeae5",
             backgroundImage: "radial-gradient(circle, rgba(24,22,15,0.07) 1px, transparent 1px)",
             backgroundSize: "20px 20px",
+            position: "relative",
           }}
         >
           <div
             style={{
-              width: floor.width,
-              height: floor.height,
+              width: floor.width * zoom,
+              height: floor.height * zoom,
               borderRadius: "8px",
               overflow: "hidden",
               boxShadow: "0 4px 24px rgba(24,22,15,0.15), 0 1px 4px rgba(24,22,15,0.1)",
+              flexShrink: 0,
             }}
           >
-            <FloorCanvas width={floor.width} height={floor.height} bgColor={floor.bgColor} />
+            <FloorCanvas width={floor.width} height={floor.height} bgColor={floor.bgColor} scale={zoom} />
+          </div>
+
+          {/* Zoom controls */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "1rem",
+              right: "1.25rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25rem",
+              background: "rgba(255,255,255,0.95)",
+              border: "1px solid rgba(24,22,15,0.12)",
+              borderRadius: "8px",
+              padding: "0.25rem 0.375rem",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <button
+              onClick={() => stepZoom(-1)}
+              disabled={zoom <= ZOOM_LEVELS[0]}
+              title="Zoom out"
+              style={{ width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", cursor: zoom > ZOOM_LEVELS[0] ? "pointer" : "not-allowed", color: zoom > ZOOM_LEVELS[0] ? "#18160f" : "#c8c4be", fontSize: "1rem", borderRadius: "4px", fontFamily: "inherit" }}
+            >
+              −
+            </button>
+            <button
+              onClick={() => setZoom(1)}
+              title="Reset to 100%"
+              style={{ minWidth: "44px", height: "24px", border: "none", background: zoom === 1 ? "#f0ede8" : "none", cursor: "pointer", color: "#18160f", fontSize: "0.75rem", fontWeight: 600, fontFamily: "inherit", borderRadius: "4px" }}
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button
+              onClick={() => stepZoom(1)}
+              disabled={zoom >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+              title="Zoom in"
+              style={{ width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", cursor: zoom < ZOOM_LEVELS[ZOOM_LEVELS.length - 1] ? "pointer" : "not-allowed", color: zoom < ZOOM_LEVELS[ZOOM_LEVELS.length - 1] ? "#18160f" : "#c8c4be", fontSize: "1rem", borderRadius: "4px", fontFamily: "inherit" }}
+            >
+              +
+            </button>
           </div>
         </div>
 
+        {/* Properties sidebar */}
         <aside
           style={{
             width: "260px",

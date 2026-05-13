@@ -13,6 +13,7 @@ interface Props {
   width: number;
   height: number;
   bgColor: string;
+  scale?: number;
 }
 
 function TableNode({
@@ -147,10 +148,10 @@ const GHOST_TABLE: TableItem = {
   floorId: "",
 };
 
-export default function FloorCanvas({ width, height, bgColor }: Props) {
+export default function FloorCanvas({ width, height, bgColor, scale = 1 }: Props) {
   const {
     tables, walls, selectedId, tool,
-    setSelectedId, updateTable, removeTable, addTable, addWall, removeWall, undo, redo,
+    setSelectedId, updateTable, removeTable, addTable, addWall, removeWall, undo, redo, setTool,
   } = useCanvasStore();
 
   const stageRef = useRef<Konva.Stage>(null);
@@ -182,10 +183,16 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
         e.preventDefault();
         redo();
       }
+      if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (e.key === "s") { e.preventDefault(); setTool("select"); }
+        if (e.key === "t") { e.preventDefault(); setTool("table"); }
+        if (e.key === "w") { e.preventDefault(); setTool("wall"); }
+        if (e.key === "e") { e.preventDefault(); setTool("erase"); }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedId, removeTable, setSelectedId, undo, redo]);
+  }, [selectedId, removeTable, setSelectedId, undo, redo, setTool]);
 
   useEffect(() => {
     if (tool !== "table") setGhostPos(null);
@@ -309,8 +316,10 @@ export default function FloorCanvas({ width, height, bgColor }: Props) {
   return (
     <Stage
       ref={stageRef}
-      width={width}
-      height={height}
+      width={width * scale}
+      height={height * scale}
+      scaleX={scale}
+      scaleY={scale}
       onClick={handleStageClick}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

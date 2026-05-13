@@ -24,6 +24,7 @@ interface CanvasState {
   removeTable: (id: string) => void;
   addWall: (wall: Wall) => void;
   removeWall: (id: string) => void;
+  duplicateTable: (id: string) => void;
   setSelectedId: (id: string | null) => void;
   setTool: (tool: ToolMode) => void;
   markDirty: () => void;
@@ -57,6 +58,19 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       tables: s.tables.map((t) => (t.id === id ? { ...t, ...patch } : t)),
       isDirty: true,
     })),
+
+  duplicateTable: (id) =>
+    set((s) => {
+      const t = s.tables.find((t) => t.id === id);
+      if (!t) return s;
+      const newTable: TableItem = {
+        ...t,
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
+        x: t.x + 20,
+        y: t.y + 20,
+      };
+      return { past: pushPast(s.past, snap(s)), future: [], tables: [...s.tables, newTable], isDirty: true };
+    }),
 
   removeTable: (id) =>
     set((s) => ({
