@@ -11,6 +11,21 @@ const FloorViewCanvas = dynamic(() => import("@/components/canvas/FloorViewCanva
 
 const TODAY = new Date().toISOString().split("T")[0];
 
+function halfHourSlots(open: string, close: string): string[] {
+  const slots: string[] = [];
+  const [oh, om] = open.split(":").map(Number);
+  const [ch, cm] = close.split(":").map(Number);
+  let mins = Math.ceil((oh * 60 + om) / 30) * 30;
+  const endMins = ch * 60 + cm;
+  while (mins <= endMins) {
+    const h = String(Math.floor(mins / 60)).padStart(2, "0");
+    const m = String(mins % 60).padStart(2, "0");
+    slots.push(`${h}:${m}`);
+    mins += 30;
+  }
+  return slots;
+}
+
 function Legend() {
   const items = [
     { color: "#dcfce7", border: "#a8a09a", label: "Available" },
@@ -84,8 +99,8 @@ export default function RestaurantDetailPage() {
       return;
     }
     if (!booking.date) { setBookingErr("Please select a date"); return; }
-    if (!booking.startTime || !booking.endTime) { setBookingErr("Please set arrival and departure times"); return; }
-    if (booking.startTime >= booking.endTime) { setBookingErr("Departure must be after arrival"); return; }
+    if (!booking.startTime) { setBookingErr("Please set arrival time"); return; }
+    if (booking.endTime && booking.startTime >= booking.endTime) { setBookingErr("Departure must be after arrival"); return; }
     if (booking.partySize > selectedTable.capacity) {
       setBookingErr(`Table ${selectedTable.label} fits ${selectedTable.capacity} guests max`);
       return;
@@ -288,11 +303,21 @@ export default function RestaurantDetailPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.625rem" }}>
                 <div>
                   <label className="label">Arrival</label>
-                  <input type="time" value={booking.startTime} onChange={(e) => setBooking((b) => ({ ...b, startTime: e.target.value }))} className="input" style={{ colorScheme: "light" }} />
+                  <select value={booking.startTime} onChange={(e) => setBooking((b) => ({ ...b, startTime: e.target.value }))} className="input">
+                    <option value="">--:--</option>
+                    {halfHourSlots(restaurant.openTime, restaurant.closeTime).map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="label">Departure</label>
-                  <input type="time" value={booking.endTime} onChange={(e) => setBooking((b) => ({ ...b, endTime: e.target.value }))} className="input" style={{ colorScheme: "light" }} />
+                  <select value={booking.endTime} onChange={(e) => setBooking((b) => ({ ...b, endTime: e.target.value }))} className="input">
+                    <option value="">--:--</option>
+                    {halfHourSlots(restaurant.openTime, restaurant.closeTime).map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>

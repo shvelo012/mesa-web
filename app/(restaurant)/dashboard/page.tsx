@@ -186,6 +186,9 @@ export default function DashboardPage() {
                 )}
               </button>
             </Link>
+            <Link href="/settings" style={{ textDecoration: "none" }}>
+              <button className="btn btn-ghost btn-sm">Settings</button>
+            </Link>
             {user && <span style={{ fontSize: "0.875rem", color: "#9a9088" }}>{user.name}</span>}
             <button className="btn btn-ghost btn-sm" onClick={() => { logout(); router.push("/"); }}>Sign out</button>
           </div>

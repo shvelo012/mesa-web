@@ -19,6 +19,11 @@ export interface Restaurant {
   address: string;
   phone: string;
   email: string;
+  notificationEmail?: string | null;
+  smtpHost?: string | null;
+  smtpPort?: number | null;
+  smtpUser?: string | null;
+  smtpConfigured?: boolean;
   cuisine?: string;
   openTime: string;
   closeTime: string;
