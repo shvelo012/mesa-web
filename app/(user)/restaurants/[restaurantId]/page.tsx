@@ -32,16 +32,22 @@ function Legend() {
 
 export default function RestaurantDetailPage() {
   const { restaurantId } = useParams<{ restaurantId: string }>();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
   const [booking, setBooking] = useState({ date: "", startTime: "", endTime: "", partySize: 2, notes: "" });
   const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
+  const [userContact, setUserContact] = useState({ name: user?.name ?? "", email: user?.email ?? "", phone: "" });
+  const [editingContact, setEditingContact] = useState(false);
   const [bookingMsg, setBookingMsg] = useState("");
   const [bookingErr, setBookingErr] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) setUserContact((c) => ({ ...c, name: c.name || user.name, email: c.email || user.email }));
+  }, [user]);
 
   useEffect(() => {
     api.get(`/restaurants/${restaurantId}`).then(({ data }) => {
@@ -92,6 +98,12 @@ export default function RestaurantDetailPage() {
         payload.guestName = guest.name.trim();
         payload.guestEmail = guest.email.trim();
         if (guest.phone.trim()) payload.guestPhone = guest.phone.trim();
+      } else {
+        if (userContact.name.trim() !== user.name || userContact.email.trim() !== user.email) {
+          payload.guestName = userContact.name.trim();
+          payload.guestEmail = userContact.email.trim();
+        }
+        if (userContact.phone.trim()) payload.guestPhone = userContact.phone.trim();
       }
       await api.post("/reservations", payload);
       setBookingMsg(
@@ -128,6 +140,15 @@ export default function RestaurantDetailPage() {
           </button>
           <div style={{ width: "1px", height: "16px", background: "rgba(24,22,15,0.1)" }} />
           <span style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>mesa</span>
+          <div style={{ flex: 1 }} />
+          {user && (
+            <button
+              onClick={() => { logout(); router.push("/login"); }}
+              style={{ background: "none", border: "1px solid rgba(24,22,15,0.12)", cursor: "pointer", color: "#9a9088", fontSize: "0.8125rem", fontWeight: 500, fontFamily: "inherit", padding: "0.375rem 0.75rem", borderRadius: "6px" }}
+            >
+              Sign out
+            </button>
+          )}
         </div>
       </nav>
 
@@ -294,26 +315,79 @@ export default function RestaurantDetailPage() {
                 <label className="label">Special requests</label>
                 <textarea value={booking.notes} onChange={(e) => setBooking((b) => ({ ...b, notes: e.target.value }))} rows={2} className="input" placeholder="Dietary needs, occasion…" />
               </div>
-              {!user && (
-                <>
-                  <div style={{ borderTop: "1px solid rgba(24,22,15,0.08)", paddingTop: "1rem" }}>
-                    <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginBottom: "0.75rem" }}>Your details</p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {user ? (
+                <div style={{ borderTop: "1px solid rgba(24,22,15,0.08)", paddingTop: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.625rem" }}>
+                    <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#5c5248" }}>Booking as</p>
+                    <button
+                      onClick={() => setEditingContact((v) => !v)}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: "#c4410c", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
+                    >
+                      {editingContact ? "Done" : "Edit"}
+                    </button>
+                  </div>
+                  {editingContact ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
                       <div>
-                        <label className="label">Name *</label>
-                        <input type="text" value={guest.name} onChange={(e) => setGuest((g) => ({ ...g, name: e.target.value }))} className="input" placeholder="Full name" />
+                        <label className="label">Name</label>
+                        <input
+                          type="text"
+                          value={userContact.name}
+                          onChange={(e) => setUserContact((c) => ({ ...c, name: e.target.value }))}
+                          className="input"
+                        />
                       </div>
                       <div>
-                        <label className="label">Email *</label>
-                        <input type="email" value={guest.email} onChange={(e) => setGuest((g) => ({ ...g, email: e.target.value }))} className="input" placeholder="your@email.com" />
+                        <label className="label">Email</label>
+                        <input
+                          type="email"
+                          value={userContact.email}
+                          onChange={(e) => setUserContact((c) => ({ ...c, email: e.target.value }))}
+                          className="input"
+                        />
                       </div>
                       <div>
-                        <label className="label">Phone</label>
-                        <input type="tel" value={guest.phone} onChange={(e) => setGuest((g) => ({ ...g, phone: e.target.value }))} className="input" placeholder="+1 234 567 8900" />
+                        <label className="label">Phone <span style={{ fontWeight: 400, color: "#9a9088" }}>(optional)</span></label>
+                        <input
+                          type="tel"
+                          value={userContact.phone}
+                          onChange={(e) => setUserContact((c) => ({ ...c, phone: e.target.value }))}
+                          className="input"
+                          placeholder="+1 234 567 8900"
+                        />
                       </div>
                     </div>
+                  ) : (
+                    <div style={{ padding: "0.75rem 1rem", background: "#f5f3ef", borderRadius: "8px" }}>
+                      <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#18160f" }}>{userContact.name || user.name}</p>
+                      <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginTop: "0.125rem" }}>{userContact.email || user.email}</p>
+                      {userContact.phone && (
+                        <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginTop: "0.125rem" }}>{userContact.phone}</p>
+                      )}
+                      <p style={{ fontSize: "0.7rem", color: "#9a9088", marginTop: "0.375rem" }}>
+                        This info will be shared with the restaurant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ borderTop: "1px solid rgba(24,22,15,0.08)", paddingTop: "1rem" }}>
+                  <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginBottom: "0.75rem" }}>Your details</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <div>
+                      <label className="label">Name *</label>
+                      <input type="text" value={guest.name} onChange={(e) => setGuest((g) => ({ ...g, name: e.target.value }))} className="input" placeholder="Full name" />
+                    </div>
+                    <div>
+                      <label className="label">Email *</label>
+                      <input type="email" value={guest.email} onChange={(e) => setGuest((g) => ({ ...g, email: e.target.value }))} className="input" placeholder="your@email.com" />
+                    </div>
+                    <div>
+                      <label className="label">Phone</label>
+                      <input type="tel" value={guest.phone} onChange={(e) => setGuest((g) => ({ ...g, phone: e.target.value }))} className="input" placeholder="+1 234 567 8900" />
+                    </div>
                   </div>
-                </>
+                </div>
               )}
               <button onClick={handleBook} className="btn btn-primary btn-md" style={{ width: "100%", marginTop: "0.25rem" }}>
                 Reserve table
