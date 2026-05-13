@@ -176,7 +176,7 @@ export default function DashboardPage() {
             <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.2rem 0.625rem", borderRadius: "999px" }}>Owner</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Link href="/reservations" style={{ textDecoration: "none" }}>
+            <Link href="/manage-reservations" style={{ textDecoration: "none" }}>
               <button className="btn btn-ghost btn-sm" style={{ position: "relative" }}>
                 Reservations
                 {resSummary.pending > 0 && (
@@ -291,7 +291,7 @@ export default function DashboardPage() {
 
               {/* Reservations quick-link card */}
               <div className="anim-4" style={{ opacity: 0, display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <Link href="/reservations" style={{ textDecoration: "none" }}>
+                <Link href="/manage-reservations" style={{ textDecoration: "none" }}>
                   <div className="card-hover" style={{ padding: "1.5rem", cursor: "pointer" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
                       <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#18160f" }}>Reservations</h3>
@@ -324,7 +324,7 @@ export default function DashboardPage() {
                 <div className="card" style={{ padding: "1.25rem 1.5rem" }}>
                   <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#5c5248", marginBottom: "0.5rem" }}>Quick links</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-                    <Link href="/reservations" style={{ fontSize: "0.875rem", color: "#c4410c", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                    <Link href="/manage-reservations" style={{ fontSize: "0.875rem", color: "#c4410c", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.375rem" }}>
                       → Review pending requests
                     </Link>
                     <Link href={`/restaurants/${restaurant.id}`} target="_blank" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>
