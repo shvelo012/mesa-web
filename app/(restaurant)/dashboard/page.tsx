@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import { Restaurant, Floor } from "@/types";
+import { FLOOR_PRESETS, FloorPreset } from "@/lib/floorPresets";
 
 const SECTION_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   INDOOR:  { label: "Indoor",  color: "#2563eb", bg: "#eff6ff" },
@@ -31,11 +32,15 @@ export default function DashboardPage() {
   const [newFloorType, setNewFloorType] = useState("INDOOR");
   const [newFloorWidth, setNewFloorWidth] = useState(800);
   const [newFloorHeight, setNewFloorHeight] = useState(600);
+  const [pendingPreset, setPendingPreset] = useState<FloorPreset | null>(null);
   const [isEditingRestaurant, setIsEditingRestaurant] = useState(false);
   const [editForm, setEditForm] = useState<RestaurantFormData>({ name: "", description: "", address: "", phone: "", email: "", cuisine: "", openTime: "09:00", closeTime: "22:00" });
   const [editError, setEditError] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [deletingFloor, setDeletingFloor] = useState<string | null>(null);
+  const [editingFloorId, setEditingFloorId] = useState<string | null>(null);
+  const [editFloorForm, setEditFloorForm] = useState({ name: "", sectionType: "INDOOR", width: 800, height: 600 });
+  const [editFloorSaving, setEditFloorSaving] = useState(false);
 
   useEffect(() => {
     if (!_hasHydrated) return;
@@ -54,9 +59,41 @@ export default function DashboardPage() {
 
   async function addFloor() {
     if (!newFloorName.trim()) return;
-    const { data } = await api.post("/floors", { name: newFloorName, sectionType: newFloorType, width: newFloorWidth, height: newFloorHeight });
+    const payload: Record<string, unknown> = { name: newFloorName, sectionType: newFloorType, width: newFloorWidth, height: newFloorHeight };
+    if (pendingPreset) {
+      payload.tables = pendingPreset.tables;
+      payload.walls = pendingPreset.walls;
+    }
+    const { data } = await api.post("/floors", payload);
     setRestaurant((r) => r ? { ...r, floors: [...(r.floors || []), data] } : r);
     setNewFloorName("");
+    setNewFloorType("INDOOR");
+    setNewFloorWidth(800);
+    setNewFloorHeight(600);
+    setPendingPreset(null);
+  }
+
+  function startEditFloor(floor: Floor) {
+    setEditingFloorId(floor.id);
+    setEditFloorForm({ name: floor.name, sectionType: floor.sectionType, width: floor.width, height: floor.height });
+  }
+
+  async function handleSaveFloorEdit(floorId: string) {
+    if (!editFloorForm.name.trim()) return;
+    setEditFloorSaving(true);
+    try {
+      const { data } = await api.put(`/floors/${floorId}`, editFloorForm);
+      setRestaurant((r) =>
+        r
+          ? { ...r, floors: (r.floors || []).map((f) => (f.id === floorId ? { ...f, ...data } : f)) }
+          : r
+      );
+      setEditingFloorId(null);
+    } catch {
+      alert("Failed to save floor section.");
+    } finally {
+      setEditFloorSaving(false);
+    }
   }
 
   async function handleDeleteFloor(floorId: string, floorName: string) {
@@ -262,6 +299,34 @@ export default function DashboardPage() {
                   {(restaurant.floors || []).map((floor: Floor) => {
                     const s = SECTION_LABELS[floor.sectionType] || SECTION_LABELS.INDOOR;
                     const isDeleting = deletingFloor === floor.id;
+                    const isEditing = editingFloorId === floor.id;
+                    if (isEditing) {
+                      return (
+                        <div key={floor.id} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.875rem 1rem", background: "#fafaf8", border: "1px solid rgba(24,22,15,0.08)", borderRadius: "8px" }}>
+                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                            <input value={editFloorForm.name} onChange={(e) => setEditFloorForm((f) => ({ ...f, name: e.target.value }))} className="input" style={{ flex: 1 }} placeholder="Section name" />
+                            <select value={editFloorForm.sectionType} onChange={(e) => setEditFloorForm((f) => ({ ...f, sectionType: e.target.value }))} className="input" style={{ width: "auto" }}>
+                              <option value="INDOOR">Indoor</option>
+                              <option value="OUTDOOR">Outdoor</option>
+                              <option value="BAR">Bar</option>
+                              <option value="PRIVATE">Private</option>
+                            </select>
+                          </div>
+                          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
+                              <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>W</label>
+                              <input type="number" min={200} max={2000} value={editFloorForm.width} onChange={(e) => setEditFloorForm((f) => ({ ...f, width: Math.max(200, +e.target.value) }))} className="input" style={{ flex: 1 }} />
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
+                              <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>H</label>
+                              <input type="number" min={200} max={2000} value={editFloorForm.height} onChange={(e) => setEditFloorForm((f) => ({ ...f, height: Math.max(200, +e.target.value) }))} className="input" style={{ flex: 1 }} />
+                            </div>
+                            <button className="btn btn-primary btn-sm" onClick={() => handleSaveFloorEdit(floor.id)} disabled={editFloorSaving} style={{ flexShrink: 0 }}>{editFloorSaving ? "Saving…" : "Save"}</button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingFloorId(null)} style={{ flexShrink: 0 }}>Cancel</button>
+                          </div>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={floor.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.875rem 1rem", background: "#fafaf8", border: "1px solid rgba(24,22,15,0.08)", borderRadius: "8px", opacity: isDeleting ? 0.5 : 1, transition: "opacity 0.15s" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
@@ -272,6 +337,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: "0.375rem", flexShrink: 0 }}>
+                          <button onClick={() => startEditFloor(floor)} className="btn btn-sm btn-outline">Edit</button>
                           <Link href={`/editor/${floor.id}`} className="btn btn-sm btn-outline" style={{ textDecoration: "none" }}>Edit layout</Link>
                           <button onClick={() => handleDeleteFloor(floor.id, floor.name)} disabled={isDeleting} title="Delete" style={{ padding: "0.35rem 0.5rem", background: "#fef2f2", border: "none", borderRadius: "6px", color: "#dc2626", cursor: isDeleting ? "not-allowed" : "pointer", fontSize: "0.875rem", lineHeight: 1 }}>×</button>
                         </div>
@@ -282,10 +348,51 @@ export default function DashboardPage() {
 
                 <div style={{ paddingTop: "1.25rem", borderTop: "1px solid rgba(24,22,15,0.08)" }}>
                   <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#5c5248", marginBottom: "0.875rem" }}>Add a section</p>
+
+                  {/* Presets */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1rem" }}>
+                    {FLOOR_PRESETS.map((preset) => {
+                      const s = SECTION_LABELS[preset.sectionType];
+                      return (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => {
+                            setNewFloorName(preset.name);
+                            setNewFloorType(preset.sectionType);
+                            setNewFloorWidth(preset.width);
+                            setNewFloorHeight(preset.height);
+                            setPendingPreset(preset);
+                          }}
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            padding: "0.35rem 0.625rem",
+                            borderRadius: "999px",
+                            border: "1px solid rgba(24,22,15,0.12)",
+                            background: s?.bg || "#ffffff",
+                            color: s?.color || "#5c5248",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                          title={`${preset.name} — ${preset.width}×${preset.height}`}
+                        >
+                          {preset.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {pendingPreset && (
+                    <div style={{ fontSize: "0.75rem", color: "#5c5248", marginBottom: "0.25rem" }}>
+                      Preset "{pendingPreset.name}" selected — includes {pendingPreset.tables.length} table{pendingPreset.tables.length !== 1 ? "s" : ""}{pendingPreset.walls.length ? ` and ${pendingPreset.walls.length} wall${pendingPreset.walls.length !== 1 ? "s" : ""}` : ""}.
+                    </div>
+                  )}
+
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
                     <div style={{ display: "flex", gap: "0.625rem" }}>
-                      <input placeholder="Section name" value={newFloorName} onChange={(e) => setNewFloorName(e.target.value)} className="input" style={{ flex: 1 }} onKeyDown={(e) => e.key === "Enter" && addFloor()} />
-                      <select value={newFloorType} onChange={(e) => setNewFloorType(e.target.value)} className="input" style={{ width: "auto" }}>
+                      <input placeholder="Section name" value={newFloorName} onChange={(e) => { setNewFloorName(e.target.value); setPendingPreset(null); }} className="input" style={{ flex: 1 }} onKeyDown={(e) => e.key === "Enter" && addFloor()} />
+                      <select value={newFloorType} onChange={(e) => { setNewFloorType(e.target.value); setPendingPreset(null); }} className="input" style={{ width: "auto" }}>
                         <option value="INDOOR">Indoor</option>
                         <option value="OUTDOOR">Outdoor</option>
                         <option value="BAR">Bar</option>
@@ -295,11 +402,11 @@ export default function DashboardPage() {
                     <div style={{ display: "flex", gap: "0.625rem", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
                         <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>W</label>
-                        <input type="number" min={200} max={2000} value={newFloorWidth} onChange={(e) => setNewFloorWidth(Math.max(200, +e.target.value))} className="input" style={{ flex: 1 }} />
+                        <input type="number" min={200} max={2000} value={newFloorWidth} onChange={(e) => { setNewFloorWidth(Math.max(200, +e.target.value)); setPendingPreset(null); }} className="input" style={{ flex: 1 }} />
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
                         <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>H</label>
-                        <input type="number" min={200} max={2000} value={newFloorHeight} onChange={(e) => setNewFloorHeight(Math.max(200, +e.target.value))} className="input" style={{ flex: 1 }} />
+                        <input type="number" min={200} max={2000} value={newFloorHeight} onChange={(e) => { setNewFloorHeight(Math.max(200, +e.target.value)); setPendingPreset(null); }} className="input" style={{ flex: 1 }} />
                       </div>
                       <button className="btn btn-primary btn-md" onClick={addFloor} style={{ flexShrink: 0 }}>Add</button>
                     </div>
