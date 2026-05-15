@@ -1,4 +1,7 @@
 export type Role = "USER" | "RESTAURANT_OWNER";
+export type MenuType = "PHOTO" | "STRUCTURED";
+export type LayoutStyle = "LIST" | "CARD_GRID" | "TWO_COLUMN";
+export type DietaryTag = "vegan" | "vegetarian" | "gluten-free" | "dairy-free" | "spicy" | "nuts";
 export type TableShape = "RECTANGLE" | "CIRCLE" | "SQUARE";
 export type SectionType = "INDOOR" | "OUTDOOR" | "BAR" | "PRIVATE";
 export type ReservationStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
@@ -68,6 +71,42 @@ export interface Wall {
   x2: number;
   y2: number;
   floorId: string;
+}
+
+export interface MenuPhoto {
+  id: string;
+  menuId: string;
+  url: string;
+  order: number;
+}
+
+export interface MenuItem {
+  id: string;
+  groupId: string;
+  name: string;
+  price: number;
+  description?: string | null;
+  dietaryTags: DietaryTag[];
+  order: number;
+}
+
+export interface MenuGroup {
+  id: string;
+  menuId: string;
+  name: string;
+  order: number;
+  items?: MenuItem[];
+}
+
+export interface Menu {
+  id: string;
+  restaurantId: string;
+  name: string;
+  type: MenuType;
+  layoutStyle?: LayoutStyle | null;
+  order: number;
+  photos?: MenuPhoto[];
+  groups?: MenuGroup[];
 }
 
 export interface Reservation {

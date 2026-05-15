@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
-import { Restaurant, Floor, TableItem } from "@/types";
+import { Restaurant, Floor, TableItem, Menu } from "@/types";
 import { useAuthStore } from "@/store/auth.store";
+import MenuDisplay from "@/components/menu/MenuDisplay";
 
 const FloorViewCanvas = dynamic(() => import("@/components/canvas/FloorViewCanvas"), { ssr: false });
 
@@ -58,6 +59,7 @@ export default function RestaurantDetailPage() {
   const [editingContact, setEditingContact] = useState(false);
   const [bookingMsg, setBookingMsg] = useState("");
   const [bookingErr, setBookingErr] = useState("");
+  const [menus, setMenus] = useState<Menu[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function RestaurantDetailPage() {
       setRestaurant(data);
       if (data.floors?.length) loadFloor(data.floors[0].id);
     });
+    api.get(`/menus/public/${restaurantId}`).then(({ data }) => setMenus(data)).catch(() => {});
   }, [restaurantId]);
 
   useEffect(() => {
@@ -421,6 +424,16 @@ export default function RestaurantDetailPage() {
           </div>
         </aside>
       </div>
+
+      {/* Menu section */}
+      {menus.length > 0 && (
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem 3rem" }} className="anim-4">
+          <div style={{ borderTop: "1px solid rgba(24,22,15,0.09)", paddingTop: "2rem" }}>
+            <h2 style={{ fontSize: "1.375rem", fontWeight: 800, color: "#18160f", letterSpacing: "-0.02em", margin: "0 0 1.5rem" }}>Menu</h2>
+            <MenuDisplay menus={menus} />
+          </div>
+        </div>
+      )}
 
       {lightbox && (
         <div

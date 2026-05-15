@@ -186,6 +186,9 @@ export default function DashboardPage() {
                 )}
               </button>
             </Link>
+            <Link href="/menu" style={{ textDecoration: "none" }}>
+              <button className="btn btn-ghost btn-sm">Menu</button>
+            </Link>
             <Link href="/settings" style={{ textDecoration: "none" }}>
               <button className="btn btn-ghost btn-sm">Settings</button>
             </Link>
@@ -329,6 +332,9 @@ export default function DashboardPage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
                     <Link href="/manage-reservations" style={{ fontSize: "0.875rem", color: "#c4410c", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.375rem" }}>
                       → Review pending requests
+                    </Link>
+                    <Link href="/menu" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>
+                      → Manage menus
                     </Link>
                     <Link href={`/restaurants/${restaurant.id}`} target="_blank" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>
                       → View public booking page

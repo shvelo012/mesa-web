@@ -2,7 +2,7 @@ import axios from "axios";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
-export const api = axios.create({ baseURL: BASE });
+export const api = axios.create({ baseURL: BASE, adapter: "fetch" });
 
 api.interceptors.request.use((config) => {
   const token =
