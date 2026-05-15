@@ -28,8 +28,28 @@ type ReservationItem = {
   guestEmail?: string;
   guestPhone?: string;
   user?: { name: string; email: string; phone?: string };
+  tableId?: string;
   table?: { label: string };
 };
+
+function timeRangesOverlap(s1: string, e1: string, s2: string, e2: string): boolean {
+  return s1 <= e2 && e1 >= s2;
+}
+
+function getOverlappingPending(
+  reservations: ReservationItem[],
+  target: ReservationItem,
+): ReservationItem[] {
+  if (target.status !== "PENDING") return [];
+  return reservations.filter(
+    (r) =>
+      r.id !== target.id &&
+      r.status === "PENDING" &&
+      r.tableId === target.tableId &&
+      r.date === target.date &&
+      timeRangesOverlap(r.startTime, r.endTime, target.startTime, target.endTime),
+  );
+}
 
 type Tab = "PENDING" | "CONFIRMED" | "ALL" | "PAST";
 
@@ -44,6 +64,12 @@ export default function ReservationsPage() {
   const [newCount, setNewCount] = useState(0);
   const prevPendingIds = useRef<Set<string>>(new Set());
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [overlapModal, setOverlapModal] = useState<{
+    isOpen: boolean;
+    target: ReservationItem;
+    group: ReservationItem[];
+  } | null>(null);
 
   const fetchReservations = useCallback(async (isInitial = false) => {
     try {
@@ -95,6 +121,8 @@ export default function ReservationsPage() {
       if (status !== "PENDING") {
         prevPendingIds.current.delete(id);
       }
+      // Refresh to pick up auto-declined overlapping reservations
+      await fetchReservations(false);
     } catch {
       alert("Failed to update reservation.");
     } finally {
@@ -251,6 +279,8 @@ export default function ReservationsPage() {
                 const isPending = r.status === "PENDING";
                 const isConfirmed = r.status === "CONFIRMED";
                 const busy = !!actionLoading;
+                const overlaps = isPending ? getOverlappingPending(reservations, r) : [];
+                const hasOverlap = overlaps.length > 0;
 
                 return (
                   <div
@@ -262,7 +292,11 @@ export default function ReservationsPage() {
                       padding: "1rem 1.5rem",
                       borderTop: i === 0 ? "none" : "1px solid rgba(24,22,15,0.06)",
                       alignItems: "center",
-                      background: isPending ? "rgba(255,251,235,0.5)" : "transparent",
+                      background: hasOverlap
+                        ? "rgba(254,226,226,0.6)"
+                        : isPending
+                          ? "rgba(255,251,235,0.5)"
+                          : "transparent",
                       transition: "background 0.2s",
                     }}
                   >
@@ -312,7 +346,31 @@ export default function ReservationsPage() {
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap", alignItems: "center" }}>
+                      {isPending && hasOverlap && (
+                        <button
+                          onClick={() => setOverlapModal({ isOpen: true, target: r, group: overlaps })}
+                          disabled={busy}
+                          title="Overlapping requests"
+                          style={{
+                            padding: "0.35rem 0.55rem",
+                            fontSize: "0.8125rem",
+                            fontWeight: 700,
+                            fontFamily: "inherit",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: busy ? "not-allowed" : "pointer",
+                            background: "#dc2626",
+                            color: "#fff",
+                            opacity: busy ? 0.65 : 1,
+                            transition: "opacity 0.15s",
+                            lineHeight: 1,
+                            minWidth: "28px",
+                          }}
+                        >
+                          !
+                        </button>
+                      )}
                       {isPending && (
                         <>
                           <button
@@ -357,6 +415,150 @@ export default function ReservationsPage() {
           )}
         </div>
       </div>
+
+      {/* Overlap Modal */}
+      {overlapModal?.isOpen && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setOverlapModal(null); }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            zIndex: 400,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "12px",
+              width: "100%",
+              maxWidth: "520px",
+              maxHeight: "80vh",
+              overflow: "auto",
+              boxShadow: "0 24px 80px rgba(0,0,0,0.22)",
+              animation: "slideUp 0.2s ease",
+            }}
+          >
+            <div
+              style={{
+                padding: "1.25rem 1.5rem",
+                borderBottom: "1px solid rgba(24,22,15,0.08)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                position: "sticky",
+                top: 0,
+                background: "#ffffff",
+                zIndex: 1,
+              }}
+            >
+              <div>
+                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.01em" }}>
+                  Overlapping Requests
+                </h3>
+                <p style={{ fontSize: "0.75rem", color: "#9a9088", marginTop: "0.15rem" }}>
+                  Table {overlapModal.target.table?.label} · {overlapModal.target.date} · Accepting one will decline the others
+                </p>
+              </div>
+              <button
+                onClick={() => setOverlapModal(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#9a9088",
+                  fontSize: "1.375rem",
+                  lineHeight: 1,
+                  padding: "0.25rem",
+                  borderRadius: "6px",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: "0.75rem 1.25rem" }}>
+              {[overlapModal.target, ...overlapModal.group].map((item) => {
+                const itemName = item.user?.name || item.guestName || "Guest";
+                const isTarget = item.id === overlapModal.target.id;
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 110px 90px",
+                      gap: "0.75rem",
+                      alignItems: "center",
+                      padding: "0.75rem 0",
+                      borderTop: "1px solid rgba(24,22,15,0.06)",
+                    }}
+                  >
+                    <div>
+                      <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#18160f" }}>
+                        {itemName} {isTarget && (
+                          <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "#dc2626", background: "#fef2f2", padding: "0.1rem 0.4rem", borderRadius: "999px", marginLeft: "0.25rem" }}>
+                            This request
+                          </span>
+                        )}
+                      </p>
+                      <p style={{ fontSize: "0.75rem", color: "#9a9088", marginTop: "0.1rem" }}>
+                        {item.startTime} – {item.endTime} · {item.partySize} guests
+                      </p>
+                      {item.notes && (
+                        <p style={{ fontSize: "0.7rem", color: "#5c5248", marginTop: "0.15rem", fontStyle: "italic" }}>
+                          “{item.notes}”
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <span
+                        className="badge"
+                        style={{
+                          background: item.status === "PENDING" ? "#fffbeb" : STATUS_STYLE[item.status]?.bg || "#f0ede8",
+                          color: item.status === "PENDING" ? "#b45309" : STATUS_STYLE[item.status]?.color || "#5c5248",
+                        }}
+                      >
+                        {item.status === "PENDING" ? "Pending" : STATUS_STYLE[item.status]?.label || item.status}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      {item.status === "PENDING" && (
+                        <button
+                          onClick={() => {
+                            setOverlapModal(null);
+                            handleStatus(item.id, "CONFIRMED");
+                          }}
+                          disabled={!!actionLoading}
+                          style={{
+                            padding: "0.35rem 0.75rem",
+                            fontSize: "0.8125rem",
+                            fontWeight: 600,
+                            fontFamily: "inherit",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: actionLoading ? "not-allowed" : "pointer",
+                            background: "#16a34a",
+                            color: "#fff",
+                            opacity: actionLoading ? 0.65 : 1,
+                            transition: "opacity 0.15s",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {actionLoading === item.id + "CONFIRMED" ? "…" : "Accept"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
