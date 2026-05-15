@@ -58,6 +58,7 @@ export default function NewBookingPage() {
   const [selectedFloorId, setSelectedFloorId] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set());
+  const [tableBookings, setTableBookings] = useState<Record<string, { startTime: string; endTime: string }[]>>({});
   const [availLoading, setAvailLoading] = useState(false);
   const [availFetched, setAvailFetched] = useState(false);
 
@@ -100,26 +101,34 @@ export default function NewBookingPage() {
     }).catch(() => setLoading(false));
   }, [user, _hasHydrated, router]);
 
-  // Fetch availability whenever date+time window is complete
-  const fetchAvailability = useCallback(async (d: string, st: string, et: string) => {
-    if (!d || !st || !et || st >= et) return;
-    const key = `${d}|${st}|${et}`;
+  // Fetch availability whenever date is set (bookings shown)
+  // and re-fetch when time window is complete (occupied tables marked)
+  const fetchAvailability = useCallback(async (d: string, st?: string, et?: string) => {
+    if (!d) return;
+    const key = st && et ? `${d}|${st}|${et}` : `${d}`;
     if (prevAvailKey.current === key) return;
     prevAvailKey.current = key;
 
     setAvailLoading(true);
     try {
-      const params = new URLSearchParams({ date: d, startTime: st, endTime: et });
-      const { data } = await api.get<{ floors: { tables: { id: string; available: boolean }[] }[] }>(
-        `/reservations/availability?${params}`
-      );
+      const params = new URLSearchParams({ date: d });
+      if (st) params.set("startTime", st);
+      if (et) params.set("endTime", et);
+      const { data } = await api.get<{
+        floors: {
+          tables: { id: string; available: boolean; bookings: { startTime: string; endTime: string }[] }[];
+        }[];
+      }>(`/reservations/availability?${params}`);
       const booked = new Set<string>();
+      const bookingsMap: Record<string, { startTime: string; endTime: string }[]> = {};
       for (const fl of data.floors) {
         for (const t of fl.tables) {
           if (!t.available) booked.add(t.id);
+          bookingsMap[t.id] = t.bookings;
         }
       }
       setOccupiedIds(booked);
+      setTableBookings(bookingsMap);
       setAvailFetched(true);
       // deselect table if it just became occupied
       setSelectedTable((prev) => (prev && booked.has(prev.id) ? null : prev));
@@ -131,10 +140,15 @@ export default function NewBookingPage() {
   }, []);
 
   useEffect(() => {
-    if (date && startTime && endTime && startTime < endTime) {
-      fetchAvailability(date, startTime, endTime);
+    if (date) {
+      if (startTime && endTime && startTime < endTime) {
+        fetchAvailability(date, startTime, endTime);
+      } else {
+        fetchAvailability(date);
+      }
     } else {
       setOccupiedIds(new Set());
+      setTableBookings({});
       setAvailFetched(false);
       prevAvailKey.current = "";
     }
@@ -303,6 +317,8 @@ export default function NewBookingPage() {
                     setError("");
                   }}
                   partySize={partySize}
+                  tableBookings={tableBookings}
+                  occupiedIds={occupiedIds}
                 />
               </div>
 
