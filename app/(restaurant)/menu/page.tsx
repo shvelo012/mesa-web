@@ -80,6 +80,9 @@ export default function MenuPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <Link href="/dashboard" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>Dashboard</Link>
             <Link href="/manage-reservations" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>Reservations</Link>
+            {can("REPORTS") && (
+              <Link href="/dashboard/reports" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>Reports</Link>
+            )}
             <button onClick={logout} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.875rem", color: "#9a9088", fontFamily: "inherit" }}>Sign out</button>
           </div>
         </div>

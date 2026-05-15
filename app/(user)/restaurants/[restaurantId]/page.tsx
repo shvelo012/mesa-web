@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
@@ -62,6 +62,12 @@ export default function RestaurantDetailPage() {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
+  const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set());
+  const [tableBookings, setTableBookings] = useState<Record<string, { startTime: string; endTime: string }[]>>({});
+  const [availLoading, setAvailLoading] = useState(false);
+  const [availFetched, setAvailFetched] = useState(false);
+  const prevAvailKey = useRef("");
+
   useEffect(() => {
     if (user) setUserContact((c) => ({ ...c, name: c.name || user.name, email: c.email || user.email }));
   }, [user]);
@@ -94,6 +100,56 @@ export default function RestaurantDetailPage() {
     setBookingMsg("");
     setBookingErr("");
   }
+
+  const fetchAvailability = useCallback(async (d: string, st?: string, et?: string) => {
+    if (!d) return;
+    const key = st && et ? `${d}|${st}|${et}` : `${d}`;
+    if (prevAvailKey.current === key) return;
+    prevAvailKey.current = key;
+
+    setAvailLoading(true);
+    try {
+      const params = new URLSearchParams({ date: d });
+      if (st) params.set("startTime", st);
+      if (et) params.set("endTime", et);
+      const { data } = await api.get<{
+        floors: {
+          tables: { id: string; available: boolean; bookings: { startTime: string; endTime: string }[] }[];
+        }[];
+      }>(`/restaurants/${restaurantId}/availability?${params}`);
+      const booked = new Set<string>();
+      const bookingsMap: Record<string, { startTime: string; endTime: string }[]> = {};
+      for (const fl of data.floors) {
+        for (const t of fl.tables) {
+          if (!t.available) booked.add(t.id);
+          bookingsMap[t.id] = t.bookings;
+        }
+      }
+      setOccupiedIds(booked);
+      setTableBookings(bookingsMap);
+      setAvailFetched(true);
+      setSelectedTable((prev) => (prev && booked.has(prev.id) ? null : prev));
+    } catch {
+      // silently ignore — canvas just won't dim booked tables
+    } finally {
+      setAvailLoading(false);
+    }
+  }, [restaurantId]);
+
+  useEffect(() => {
+    if (booking.date) {
+      if (booking.startTime && booking.endTime && booking.startTime < booking.endTime) {
+        fetchAvailability(booking.date, booking.startTime, booking.endTime);
+      } else {
+        fetchAvailability(booking.date);
+      }
+    } else {
+      setOccupiedIds(new Set());
+      setTableBookings({});
+      setAvailFetched(false);
+      prevAvailKey.current = "";
+    }
+  }, [booking.date, booking.startTime, booking.endTime, fetchAvailability]);
 
   async function handleBook() {
     if (!selectedTable) { setBookingErr("Please select a table first"); return; }
@@ -223,9 +279,22 @@ export default function RestaurantDetailPage() {
 
           {selectedFloor && (
             <div className="card" style={{ overflow: "hidden" }}>
-              <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid rgba(24,22,15,0.06)", display: "flex", alignItems: "center", gap: "0.5rem", background: "#fafaf8" }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c4410c" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>Click a table to select it for booking</span>
+              <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid rgba(24,22,15,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", background: "#fafaf8" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c4410c" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>
+                    {booking.startTime && booking.endTime
+                      ? availLoading
+                        ? "Checking availability…"
+                        : availFetched
+                          ? `Select an available table for ${booking.date} · ${booking.startTime} – ${booking.endTime}`
+                          : "Set date and times to see live availability"
+                      : "Set date and times to see live availability"}
+                  </span>
+                </div>
+                {availLoading && (
+                  <div style={{ width: "14px", height: "14px", border: "2px solid #f0ede8", borderTopColor: "#c4410c", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                )}
               </div>
               <div style={{ background: "#f9f7f4", padding: "1rem" }}>
                 <FloorViewCanvas
@@ -233,6 +302,8 @@ export default function RestaurantDetailPage() {
                   selectedTableId={selectedTable?.id ?? null}
                   onSelectTable={setSelectedTable}
                   partySize={booking.partySize}
+                  occupiedIds={occupiedIds}
+                  tableBookings={tableBookings}
                 />
               </div>
               <Legend />

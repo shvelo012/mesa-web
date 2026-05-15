@@ -194,6 +194,11 @@ export default function DashboardPage() {
             <Link href="/settings" style={{ textDecoration: "none" }}>
               <button className="btn btn-ghost btn-sm">Settings</button>
             </Link>
+            {can("REPORTS") && (
+              <Link href="/dashboard/reports" style={{ textDecoration: "none" }}>
+                <button className="btn btn-ghost btn-sm">Reports</button>
+              </Link>
+            )}
             {can("STAFF_MANAGE") && (
               <Link href="/dashboard/staff" style={{ textDecoration: "none" }}>
                 <button className="btn btn-ghost btn-sm">Staff</button>

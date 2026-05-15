@@ -108,6 +108,9 @@ export default function SettingsPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <Link href="/dashboard"><button className="btn btn-ghost btn-sm">Dashboard</button></Link>
             <Link href="/manage-reservations"><button className="btn btn-ghost btn-sm">Reservations</button></Link>
+            {can("REPORTS") && (
+              <Link href="/dashboard/reports"><button className="btn btn-ghost btn-sm">Reports</button></Link>
+            )}
             {user && <span style={{ fontSize: "0.875rem", color: "#9a9088" }}>{user.name}</span>}
             <button className="btn btn-ghost btn-sm" onClick={() => { logout(); router.push("/"); }}>Sign out</button>
           </div>
