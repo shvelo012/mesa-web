@@ -54,7 +54,7 @@ function getOverlappingPending(
 type Tab = "PENDING" | "CONFIRMED" | "ALL" | "PAST";
 
 export default function ReservationsPage() {
-  const { user, _hasHydrated } = useAuthStore();
+  const { user, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const [reservations, setReservations] = useState<ReservationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +96,7 @@ export default function ReservationsPage() {
   // Auth guard + initial load
   useEffect(() => {
     if (!_hasHydrated) return;
-    if (!user || user.role !== "RESTAURANT_OWNER") { router.push("/login"); return; }
+    if (!user || !can("RESERVATIONS_READ")) { router.push("/login"); return; }
     fetchReservations(true).finally(() => setLoading(false));
   }, [user, _hasHydrated, fetchReservations]);
 

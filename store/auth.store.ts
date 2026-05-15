@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { User } from "../types";
+import { User, Permission } from "../types";
 import { api } from "../lib/api";
 
 interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  permissions: Permission[];
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
@@ -17,14 +18,17 @@ interface AuthState {
     role: "USER" | "RESTAURANT_OWNER";
   }) => Promise<void>;
   logout: () => void;
+  can: (permission: Permission) => boolean;
+  loadPermissions: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
+      permissions: [],
       _hasHydrated: false,
       setHasHydrated: (v) => set({ _hasHydrated: v }),
 
@@ -33,6 +37,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem("accessToken", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
         set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken });
+        await get().loadPermissions();
       },
 
       register: async (formData) => {
@@ -40,17 +45,37 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem("accessToken", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
         set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken });
+        await get().loadPermissions();
       },
 
       logout: () => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        set({ user: null, accessToken: null, refreshToken: null });
+        set({ user: null, accessToken: null, refreshToken: null, permissions: [] });
+      },
+
+      can: (permission: Permission) => {
+        const { user, permissions } = get();
+        if (!user) return false;
+        if (user.role === "RESTAURANT_OWNER") return true;
+        return permissions.includes(permission);
+      },
+
+      loadPermissions: async () => {
+        try {
+          const { data } = await api.get("/restaurants/me/all");
+          if (Array.isArray(data) && data.length > 0) {
+            const first = data[0];
+            set({ permissions: first.permissions || [] });
+          }
+        } catch {
+          // silently fail — permissions stay empty
+        }
       },
     }),
     {
       name: "auth-store",
-      partialize: (s) => ({ user: s.user }),
+      partialize: (s) => ({ user: s.user, permissions: s.permissions }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

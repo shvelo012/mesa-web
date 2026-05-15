@@ -23,7 +23,7 @@ const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export default function EditorPage() {
   const { floorId } = useParams<{ floorId: string }>();
-  const { user, _hasHydrated } = useAuthStore();
+  const { user, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const { setTables, setWalls, markClean } = useCanvasStore();
   const tool = useCanvasStore((s) => s.tool);
@@ -47,7 +47,7 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!_hasHydrated) return;
-    if (!user || user.role !== "RESTAURANT_OWNER") { router.push("/login"); return; }
+    if (!user || !can("FLOOR_PLAN")) { router.push("/login"); return; }
     api.get(`/floors/${floorId}`).then(({ data }) => {
       setFloor(data);
       setTables(data.tables || []);

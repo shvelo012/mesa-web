@@ -22,7 +22,7 @@ type RestaurantFormData = {
 type ResSummary = { total: number; pending: number; confirmed: number };
 
 export default function DashboardPage() {
-  const { user, logout, _hasHydrated } = useAuthStore();
+  const { user, logout, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!_hasHydrated) return;
-    if (!user || user.role !== "RESTAURANT_OWNER") { router.push("/login"); return; }
+    if (!user || !can("FLOOR_PLAN")) { router.push("/login"); return; }
     Promise.all([
       api.get("/restaurants/me").then(({ data }) => setRestaurant(data)),
       api.get("/reservations/restaurant").then(({ data }) => {
@@ -173,7 +173,9 @@ export default function DashboardPage() {
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem", height: "64px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.875rem" }}>
             <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>mesa</span>
-            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.2rem 0.625rem", borderRadius: "999px" }}>Owner</span>
+            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.2rem 0.625rem", borderRadius: "999px" }}>
+              {user?.role === "RESTAURANT_OWNER" ? "Owner" : "Staff"}
+            </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <Link href="/manage-reservations" style={{ textDecoration: "none" }}>
@@ -192,6 +194,11 @@ export default function DashboardPage() {
             <Link href="/settings" style={{ textDecoration: "none" }}>
               <button className="btn btn-ghost btn-sm">Settings</button>
             </Link>
+            {can("STAFF_MANAGE") && (
+              <Link href="/dashboard/staff" style={{ textDecoration: "none" }}>
+                <button className="btn btn-ghost btn-sm">Staff</button>
+              </Link>
+            )}
             {user && <span style={{ fontSize: "0.875rem", color: "#9a9088" }}>{user.name}</span>}
             <button className="btn btn-ghost btn-sm" onClick={() => { logout(); router.push("/"); }}>Sign out</button>
           </div>

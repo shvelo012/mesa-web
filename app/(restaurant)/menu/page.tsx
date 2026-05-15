@@ -17,7 +17,7 @@ const LAYOUT_LABELS: Record<string, string> = {
 };
 
 export default function MenuPage() {
-  const { user, logout, _hasHydrated } = useAuthStore();
+  const { user, logout, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const [menus, setMenus] = useState<Menu[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (!_hasHydrated) return;
-    if (!user || user.role !== "RESTAURANT_OWNER") { router.push("/login"); return; }
+    if (!user || !can("MENU_MANAGE")) { router.push("/login"); return; }
     api.get("/menus/restaurant")
       .then(({ data }) => setMenus(data))
       .finally(() => setLoading(false));

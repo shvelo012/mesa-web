@@ -6,6 +6,18 @@ export type TableShape = "RECTANGLE" | "CIRCLE" | "SQUARE";
 export type SectionType = "INDOOR" | "OUTDOOR" | "BAR" | "PRIVATE";
 export type ReservationStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
 
+export type Permission =
+  | "RESERVATIONS_READ"
+  | "RESERVATIONS_WRITE"
+  | "FLOOR_PLAN"
+  | "MENU_MANAGE"
+  | "SETTINGS_READ"
+  | "SETTINGS_WRITE"
+  | "STAFF_MANAGE"
+  | "REPORTS";
+
+export type StaffRole = "MANAGER" | "HOST" | "WAITER" | "CHEF" | "CUSTOM";
+
 export interface User {
   id: string;
   email: string;
@@ -107,6 +119,21 @@ export interface Menu {
   order: number;
   photos?: MenuPhoto[];
   groups?: MenuGroup[];
+}
+
+export interface RestaurantStaff {
+  id: string;
+  userId: string;
+  restaurantId: string;
+  role: StaffRole;
+  permissions: Permission[];
+  isActive: boolean;
+  invitedBy?: string | null;
+  activationPending?: boolean;
+  createdAt?: string;
+  email?: string;
+  name?: string;
+  phone?: string | null;
 }
 
 export interface Reservation {

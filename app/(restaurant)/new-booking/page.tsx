@@ -47,7 +47,7 @@ function Legend() {
 }
 
 export default function NewBookingPage() {
-  const { user, _hasHydrated } = useAuthStore();
+  const { user, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -81,7 +81,7 @@ export default function NewBookingPage() {
   // Auth guard + load restaurant + floors
   useEffect(() => {
     if (!_hasHydrated) return;
-    if (!user || user.role !== "RESTAURANT_OWNER") { router.push("/login"); return; }
+    if (!user || !can("RESERVATIONS_WRITE")) { router.push("/login"); return; }
 
     api.get<Restaurant>("/restaurants/me").then(async ({ data }) => {
       setRestaurant(data);

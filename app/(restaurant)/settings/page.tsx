@@ -10,7 +10,7 @@ import { Restaurant } from "@/types";
 type Mode = "reply-to" | "custom-smtp";
 
 export default function SettingsPage() {
-  const { user, logout, _hasHydrated } = useAuthStore();
+  const { user, logout, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -30,7 +30,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!_hasHydrated) return;
-    if (!user || user.role !== "RESTAURANT_OWNER") { router.push("/login"); return; }
+    if (!user || !can("SETTINGS_READ")) { router.push("/login"); return; }
     api.get("/restaurants/me").then(({ data }: { data: Restaurant }) => {
       setRestaurant(data);
       setForm((f) => ({
