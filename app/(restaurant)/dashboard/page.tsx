@@ -333,6 +333,9 @@ export default function DashboardPage() {
                     <Link href="/manage-reservations" style={{ fontSize: "0.875rem", color: "#c4410c", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.375rem" }}>
                       → Review pending requests
                     </Link>
+                    <Link href="/new-booking" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>
+                      → New manual booking
+                    </Link>
                     <Link href="/menu" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>
                       → Manage menus
                     </Link>

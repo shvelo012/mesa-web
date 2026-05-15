@@ -41,7 +41,7 @@ export default function ReservationsPage() {
   const [tab, setTab] = useState<Tab>("PENDING");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [newCount, setNewCount] = useState(0); // new pending since last visit
+  const [newCount, setNewCount] = useState(0);
   const prevPendingIds = useRef<Set<string>>(new Set());
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -151,6 +151,11 @@ export default function ReservationsPage() {
               </span>
             )}
           </button>
+          <Link href="/new-booking" style={{ textDecoration: "none" }}>
+            <button style={{ padding: "0.375rem 0.875rem", fontSize: "0.8125rem", fontWeight: 600, border: "none", borderRadius: "6px", cursor: "pointer", background: "#c4410c", color: "#fff", fontFamily: "inherit", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              + New booking
+            </button>
+          </Link>
         </div>
       </nav>
 
