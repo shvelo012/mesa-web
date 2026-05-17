@@ -4,6 +4,19 @@ function timesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string
   return aStart < bEnd && aEnd > bStart;
 }
 
+function getConfirmedConflictIds(reservations: ReservationItem[]): Set<string> {
+  const confirmed = reservations.filter((r) => r.status === "CONFIRMED");
+  const ids = new Set<string>();
+  for (const p of reservations.filter((r) => r.status === "PENDING")) {
+    for (const c of confirmed) {
+      if (p.tableId && p.tableId === c.tableId && p.date === c.date && timesOverlap(p.startTime, p.endTime, c.startTime, c.endTime)) {
+        ids.add(p.id);
+      }
+    }
+  }
+  return ids;
+}
+
 function getConflictIds(reservations: ReservationItem[]): Set<string> {
   const active = reservations.filter((r) => r.status === "PENDING" || r.status === "CONFIRMED");
   const ids = new Set<string>();
@@ -69,6 +82,7 @@ interface Props {
 export default function KanbanView({ reservations, onStatusChange, actionLoading, canWrite, onGuestClick }: Props) {
   const busy = !!actionLoading;
   const conflictIds = getConflictIds(reservations);
+  const confirmedConflictIds = getConfirmedConflictIds(reservations);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", padding: "1.25rem", minHeight: "400px", alignItems: "start" }}>
@@ -98,6 +112,7 @@ export default function KanbanView({ reservations, onStatusChange, actionLoading
                 const email = r.user?.email || r.guestEmail || "";
                 const actions = canWrite ? (NEXT_STATUS[r.status] || []) : [];
                 const isLoading = actionLoading?.startsWith(r.id);
+                const acceptBlocked = r.status === "PENDING" && confirmedConflictIds.has(r.id);
 
                 return (
                   <div
@@ -154,29 +169,34 @@ export default function KanbanView({ reservations, onStatusChange, actionLoading
                     {/* Actions */}
                     {actions.length > 0 && (
                       <div style={{ display: "flex", gap: "0.375rem", marginTop: "0.625rem", flexWrap: "wrap" }}>
-                        {actions.map((a) => (
-                          <button
-                            key={a.status}
-                            onClick={() => onStatusChange(r.id, a.status)}
-                            disabled={busy}
-                            style={{
-                              flex: 1,
-                              padding: "0.3rem 0.5rem",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              fontFamily: "inherit",
-                              border: "none",
-                              borderRadius: "5px",
-                              cursor: busy ? "not-allowed" : "pointer",
-                              background: a.bg,
-                              color: a.color,
-                              opacity: isLoading ? 0.65 : 1,
-                              transition: "opacity 0.15s",
-                            }}
-                          >
-                            {isLoading && actionLoading === r.id + a.status ? "…" : a.label}
-                          </button>
-                        ))}
+                        {actions.map((a) => {
+                          const isAccept = a.status === "CONFIRMED";
+                          const blocked = isAccept && acceptBlocked;
+                          return (
+                            <button
+                              key={a.status}
+                              onClick={() => onStatusChange(r.id, a.status)}
+                              disabled={busy || blocked}
+                              title={blocked ? "Table already confirmed for this time" : undefined}
+                              style={{
+                                flex: 1,
+                                padding: "0.3rem 0.5rem",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                fontFamily: "inherit",
+                                border: "none",
+                                borderRadius: "5px",
+                                cursor: (busy || blocked) ? "not-allowed" : "pointer",
+                                background: a.bg,
+                                color: a.color,
+                                opacity: (isLoading || blocked) ? 0.4 : 1,
+                                transition: "opacity 0.15s",
+                              }}
+                            >
+                              {isLoading && actionLoading === r.id + a.status ? "…" : a.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

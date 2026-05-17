@@ -66,7 +66,7 @@ function getOverlappingPending(reservations: ReservationItem[], target: Reservat
   return reservations.filter(
     (r) =>
       r.id !== target.id &&
-      r.status === "PENDING" &&
+      (r.status === "PENDING" || r.status === "CONFIRMED") &&
       r.tableId === target.tableId &&
       r.date === target.date &&
       timeRangesOverlap(r.startTime, r.endTime, target.startTime, target.endTime),
@@ -609,6 +609,7 @@ function ReservationsPageInner() {
                   const busy = !!actionLoading;
                   const overlaps = isPending ? getOverlappingPending(reservations, r) : [];
                   const hasOverlap = overlaps.length > 0;
+                  const hasConfirmedConflict = overlaps.some((o) => o.status === "CONFIRMED");
                   const isSelected = selectedIds.has(r.id);
 
                   return (
@@ -701,8 +702,9 @@ function ReservationsPageInner() {
                           <>
                             <button
                               onClick={() => handleStatus(r.id, "CONFIRMED")}
-                              disabled={busy}
-                              style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#16a34a", color: "#fff", opacity: actionLoading === r.id + "CONFIRMED" ? 0.65 : 1 }}
+                              disabled={busy || hasConfirmedConflict}
+                              title={hasConfirmedConflict ? "Table already confirmed for this time" : undefined}
+                              style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: (busy || hasConfirmedConflict) ? "not-allowed" : "pointer", background: "#16a34a", color: "#fff", opacity: (actionLoading === r.id + "CONFIRMED" || hasConfirmedConflict) ? 0.4 : 1 }}
                             >
                               {actionLoading === r.id + "CONFIRMED" ? "…" : "Accept"}
                             </button>
@@ -793,41 +795,49 @@ function ReservationsPageInner() {
               <div>
                 <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f", margin: 0 }}>Overlapping Requests</h3>
                 <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: "0.15rem 0 0" }}>
-                  Table {overlapModal.target.table?.label} · {overlapModal.target.date} · Accepting one declines the others
+                  Table {overlapModal.target.table?.label} · {overlapModal.target.date} ·{" "}
+                  {overlapModal.group.some((r) => r.status === "CONFIRMED")
+                    ? "Table already confirmed for this time slot"
+                    : "Accepting one declines the others"}
                 </p>
               </div>
               <button onClick={() => setOverlapModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9a9088", fontSize: "1.375rem", lineHeight: 1 }}>×</button>
             </div>
             <div style={{ padding: "0.75rem 1.25rem" }}>
-              {[overlapModal.target, ...overlapModal.group].map((item) => {
-                const itemName = item.user?.name || item.guestName || "Guest";
-                const isTarget = item.id === overlapModal.target.id;
-                return (
-                  <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 110px 90px", gap: "0.75rem", alignItems: "center", padding: "0.75rem 0", borderTop: "1px solid rgba(24,22,15,0.06)" }}>
-                    <div>
-                      <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#18160f", margin: 0 }}>
-                        {itemName}
-                        {isTarget && <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "#dc2626", background: "#fef2f2", padding: "0.1rem 0.4rem", borderRadius: "999px", marginLeft: "0.25rem" }}>This request</span>}
-                      </p>
-                      <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: "0.1rem 0 0" }}>{item.startTime} – {item.endTime} · {item.partySize} guests</p>
+              {(() => {
+                const allItems = [overlapModal.target, ...overlapModal.group];
+                const groupHasConfirmed = allItems.some((i) => i.status === "CONFIRMED");
+                return allItems.map((item) => {
+                  const itemName = item.user?.name || item.guestName || "Guest";
+                  const isTarget = item.id === overlapModal.target.id;
+                  return (
+                    <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 110px 90px", gap: "0.75rem", alignItems: "center", padding: "0.75rem 0", borderTop: "1px solid rgba(24,22,15,0.06)" }}>
+                      <div>
+                        <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#18160f", margin: 0 }}>
+                          {itemName}
+                          {isTarget && <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "#dc2626", background: "#fef2f2", padding: "0.1rem 0.4rem", borderRadius: "999px", marginLeft: "0.25rem" }}>This request</span>}
+                        </p>
+                        <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: "0.1rem 0 0" }}>{item.startTime} – {item.endTime} · {item.partySize} guests</p>
+                      </div>
+                      <span className="badge" style={{ background: STATUS_STYLE[item.status]?.bg || "#f0ede8", color: STATUS_STYLE[item.status]?.color || "#5c5248" }}>
+                        {STATUS_STYLE[item.status]?.label || item.status}
+                      </span>
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        {item.status === "PENDING" && (
+                          <button
+                            onClick={() => { setOverlapModal(null); handleStatus(item.id, "CONFIRMED"); }}
+                            disabled={!!actionLoading || groupHasConfirmed}
+                            title={groupHasConfirmed ? "Table already confirmed for this time" : undefined}
+                            style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: (!!actionLoading || groupHasConfirmed) ? "not-allowed" : "pointer", background: "#16a34a", color: "#fff", opacity: groupHasConfirmed ? 0.4 : 1 }}
+                          >
+                            {actionLoading === item.id + "CONFIRMED" ? "…" : "Accept"}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <span className="badge" style={{ background: STATUS_STYLE[item.status]?.bg || "#f0ede8", color: STATUS_STYLE[item.status]?.color || "#5c5248" }}>
-                      {STATUS_STYLE[item.status]?.label || item.status}
-                    </span>
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      {item.status === "PENDING" && (
-                        <button
-                          onClick={() => { setOverlapModal(null); handleStatus(item.id, "CONFIRMED"); }}
-                          disabled={!!actionLoading}
-                          style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#16a34a", color: "#fff" }}
-                        >
-                          {actionLoading === item.id + "CONFIRMED" ? "…" : "Accept"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
