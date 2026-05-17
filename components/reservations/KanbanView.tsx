@@ -1,5 +1,24 @@
 "use client";
 
+function timesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string) {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+function getConflictIds(reservations: ReservationItem[]): Set<string> {
+  const active = reservations.filter((r) => r.status === "PENDING" || r.status === "CONFIRMED");
+  const ids = new Set<string>();
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i + 1; j < active.length; j++) {
+      const a = active[i], b = active[j];
+      if (a.tableId && a.tableId === b.tableId && a.date === b.date && timesOverlap(a.startTime, a.endTime, b.startTime, b.endTime)) {
+        ids.add(a.id);
+        ids.add(b.id);
+      }
+    }
+  }
+  return ids;
+}
+
 type ReservationItem = {
   id: string;
   date: string;
@@ -49,6 +68,7 @@ interface Props {
 
 export default function KanbanView({ reservations, onStatusChange, actionLoading, canWrite, onGuestClick }: Props) {
   const busy = !!actionLoading;
+  const conflictIds = getConflictIds(reservations);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", padding: "1.25rem", minHeight: "400px", alignItems: "start" }}>
@@ -83,22 +103,29 @@ export default function KanbanView({ reservations, onStatusChange, actionLoading
                   <div
                     key={r.id}
                     style={{
-                      background: "#ffffff",
-                      border: `1px solid ${col.border}`,
+                      background: r.status === "PENDING" && conflictIds.has(r.id) ? "#fff8f8" : "#ffffff",
+                      border: `1px solid ${r.status === "PENDING" && conflictIds.has(r.id) ? "rgba(220,38,38,0.35)" : col.border}`,
                       borderRadius: "8px",
                       padding: "0.875rem 1rem",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                     }}
                   >
-                    {/* Guest name */}
-                    <button
-                      onClick={() => email && onGuestClick && onGuestClick(email, name)}
-                      style={{ background: "none", border: "none", padding: 0, cursor: email ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", width: "100%" }}
-                    >
-                      <p style={{ fontSize: "0.875rem", fontWeight: 700, color: email ? "#c4410c" : "#18160f", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: email ? "underline" : "none" }}>
-                        {name}
-                      </p>
-                    </button>
+                    {/* Guest name + conflict badge */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: 0 }}>
+                      <button
+                        onClick={() => email && onGuestClick && onGuestClick(email, name)}
+                        style={{ background: "none", border: "none", padding: 0, cursor: email ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", flex: 1, minWidth: 0 }}
+                      >
+                        <p style={{ fontSize: "0.875rem", fontWeight: 700, color: email ? "#c4410c" : "#18160f", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: email ? "underline" : "none" }}>
+                          {name}
+                        </p>
+                      </button>
+                      {r.status === "PENDING" && conflictIds.has(r.id) && (
+                        <span title="Time conflict with another reservation" style={{ flexShrink: 0, fontSize: "0.6875rem", fontWeight: 700, color: "#dc2626", background: "#fee2e2", border: "1px solid rgba(220,38,38,0.25)", padding: "0.1rem 0.4rem", borderRadius: "4px", lineHeight: 1.4 }}>
+                          ⚠ Conflict
+                        </span>
+                      )}
+                    </div>
 
                     {/* Meta */}
                     <div style={{ marginTop: "0.375rem", display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
