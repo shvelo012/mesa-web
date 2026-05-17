@@ -13,6 +13,19 @@ const FloorViewCanvas = dynamic(() => import("@/components/canvas/FloorViewCanva
 
 const TODAY = new Date().toISOString().split("T")[0];
 
+function addMins(time: string, mins: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + mins;
+  const clamped = Math.max(0, Math.min(23 * 60 + 59, total));
+  return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
+}
+
+function timeDiffMins(start: string, end: string): number {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+
 function halfHourSlots(open: string, close: string): string[] {
   const slots: string[] = [];
   const [oh, om] = open.split(":").map(Number);
@@ -72,6 +85,8 @@ export default function RestaurantDetailPage() {
   const [tableBookings, setTableBookings] = useState<Record<string, { startTime: string; endTime: string }[]>>({});
   const [availLoading, setAvailLoading] = useState(false);
   const [availFetched, setAvailFetched] = useState(false);
+  const [nearbySlots, setNearbySlots] = useState<{ time: string; hasAvailable: boolean }[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
   const prevAvailKey = useRef("");
 
   useEffect(() => {
@@ -142,7 +157,39 @@ export default function RestaurantDetailPage() {
     }
   }, [restaurantId]);
 
+  const fetchNearbySlots = useCallback(async (d: string, st: string, et: string) => {
+    if (!d || !st || !et) return;
+    const dur = timeDiffMins(st, et);
+    const alternatives = [-90, -60, 60, 90]
+      .map((offset) => ({ time: addMins(st, offset), end: addMins(et, offset) }))
+      .filter(({ time }) => time >= "06:00" && time <= "23:30");
+    if (!alternatives.length) return;
+    setNearbyLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        alternatives.map(({ time, end }) =>
+          api.get<{ floors: { tables: { available: boolean }[] }[] }>(
+            `/restaurants/${restaurantId}/availability?date=${d}&startTime=${time}&endTime=${end}`
+          ).then(({ data }) => ({
+            time,
+            hasAvailable: data.floors.some((f) => f.tables.some((t) => t.available)),
+          }))
+        )
+      );
+      const slots = results
+        .filter((r): r is PromiseFulfilledResult<{ time: string; hasAvailable: boolean }> => r.status === "fulfilled")
+        .map((r) => r.value);
+      setNearbySlots(slots);
+    } catch {
+      setNearbySlots([]);
+    } finally {
+      setNearbyLoading(false);
+    }
+    void dur;
+  }, [restaurantId]);
+
   useEffect(() => {
+    setNearbySlots([]);
     if (booking.date) {
       if (booking.startTime && booking.endTime && booking.startTime < booking.endTime) {
         fetchAvailability(booking.date, booking.startTime, booking.endTime);
@@ -156,6 +203,13 @@ export default function RestaurantDetailPage() {
       prevAvailKey.current = "";
     }
   }, [booking.date, booking.startTime, booking.endTime, fetchAvailability]);
+
+  // When fully booked, fetch nearby alternatives
+  useEffect(() => {
+    if (availFetched && occupiedIds.size > 0 && !selectedTable && booking.date && booking.startTime && booking.endTime) {
+      fetchNearbySlots(booking.date, booking.startTime, booking.endTime);
+    }
+  }, [availFetched, occupiedIds.size, selectedTable, booking.date, booking.startTime, booking.endTime, fetchNearbySlots]);
 
   async function handleBook() {
     if (!selectedTable) { setBookingErr("Please select a table first"); return; }
@@ -265,7 +319,7 @@ export default function RestaurantDetailPage() {
       <div style={{ background: "#ffffff", borderBottom: "1px solid rgba(24,22,15,0.08)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem" }} className="anim-1">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               {restaurant.cuisine && (
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.25rem 0.625rem", borderRadius: "999px", display: "inline-block", marginBottom: "0.625rem" }}>
                   {restaurant.cuisine}
@@ -289,6 +343,26 @@ export default function RestaurantDetailPage() {
                   {restaurant.description}
                 </p>
               )}
+
+              {/* Menu preview teaser */}
+              {menus.length > 0 && (() => {
+                const previewItems = menus
+                  .flatMap((m) => (m.groups || []).flatMap((g) => g.items || []))
+                  .slice(0, 4);
+                if (!previewItems.length) return null;
+                return (
+                  <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#9a9088", marginRight: "0.25rem" }}>Menu highlights:</span>
+                    {previewItems.map((item) => (
+                      <span key={item.id} style={{ fontSize: "0.8125rem", color: "#5c5248", background: "#f5f3ef", border: "1px solid rgba(24,22,15,0.08)", padding: "0.25rem 0.625rem", borderRadius: "999px", display: "inline-flex", gap: "0.375rem", alignItems: "center" }}>
+                        {item.name}
+                        <span style={{ fontSize: "0.75rem", color: "#c4410c", fontWeight: 600 }}>${Number(item.price).toFixed(0)}</span>
+                      </span>
+                    ))}
+                    <a href="#menu-section" style={{ fontSize: "0.75rem", color: "#c4410c", textDecoration: "none", fontWeight: 600 }}>View full menu ↓</a>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -570,6 +644,41 @@ export default function RestaurantDetailPage() {
                 Reserve table
               </button>
 
+              {/* Nearby time suggestions */}
+              {availFetched && occupiedIds.size > 0 && !selectedTable && nearbySlots.length > 0 && (
+                <div style={{ marginTop: "0.75rem", padding: "0.875rem 1rem", background: "#eff6ff", borderRadius: "8px", border: "1px solid rgba(37,99,235,0.15)" }}>
+                  <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#2563eb", marginBottom: "0.5rem" }}>
+                    {nearbyLoading ? "Checking nearby times…" : "Try a different time:"}
+                  </p>
+                  {!nearbyLoading && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+                      {nearbySlots.filter((s) => s.hasAvailable).map((slot) => {
+                        const dur = timeDiffMins(booking.startTime, booking.endTime);
+                        return (
+                          <button
+                            key={slot.time}
+                            onClick={() => {
+                              setBooking((b) => ({
+                                ...b,
+                                startTime: slot.time,
+                                endTime: addMins(slot.time, dur > 0 ? dur : 90),
+                              }));
+                              setNearbySlots([]);
+                            }}
+                            style={{ padding: "0.3rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "1px solid rgba(37,99,235,0.3)", borderRadius: "999px", cursor: "pointer", background: "#fff", color: "#2563eb" }}
+                          >
+                            {slot.time}
+                          </button>
+                        );
+                      })}
+                      {nearbySlots.every((s) => !s.hasAvailable) && (
+                        <p style={{ fontSize: "0.8125rem", color: "#9a9088" }}>No nearby slots available either.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Waitlist section — show when time is set, availability fetched, and all tables are occupied */}
               {availFetched && booking.startTime && booking.endTime && occupiedIds.size > 0 && !selectedTable && !bookingMsg && (
                 <div style={{ marginTop: "0.75rem", padding: "0.875rem 1rem", background: "#f5f3ef", borderRadius: "8px", border: "1px solid rgba(24,22,15,0.1)" }}>
@@ -616,7 +725,7 @@ export default function RestaurantDetailPage() {
 
       {/* Menu section */}
       {menus.length > 0 && (
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem 3rem" }} className="anim-4">
+        <div id="menu-section" style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem 3rem" }} className="anim-4">
           <div style={{ borderTop: "1px solid rgba(24,22,15,0.09)", paddingTop: "2rem" }}>
             <h2 style={{ fontSize: "1.375rem", fontWeight: 800, color: "#18160f", letterSpacing: "-0.02em", margin: "0 0 1.5rem" }}>Menu</h2>
             <MenuDisplay menus={menus} />

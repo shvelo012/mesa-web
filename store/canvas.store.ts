@@ -16,6 +16,7 @@ interface CanvasState {
   isDirty: boolean;
   past: Snapshot[];
   future: Snapshot[];
+  hiddenIds: Set<string>;
 
   setTables: (tables: TableItem[]) => void;
   setWalls: (walls: Wall[]) => void;
@@ -31,6 +32,8 @@ interface CanvasState {
   markClean: () => void;
   undo: () => void;
   redo: () => void;
+  toggleHidden: (id: string) => void;
+  clearHidden: () => void;
 }
 
 const snap = (s: CanvasState): Snapshot => ({ tables: s.tables, walls: s.walls });
@@ -44,6 +47,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   isDirty: false,
   past: [],
   future: [],
+  hiddenIds: new Set<string>(),
 
   setTables: (tables) => set({ tables, past: [], future: [] }),
   setWalls: (walls) => set({ walls, past: [], future: [] }),
@@ -95,6 +99,12 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   setTool: (tool) => set({ tool, selectedId: null }),
   markDirty: () => set({ isDirty: true }),
   markClean: () => set({ isDirty: false }),
+  toggleHidden: (id) => set((s) => {
+    const next = new Set(s.hiddenIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return { hiddenIds: next };
+  }),
+  clearHidden: () => set({ hiddenIds: new Set<string>() }),
 
   undo: () =>
     set((s) => {

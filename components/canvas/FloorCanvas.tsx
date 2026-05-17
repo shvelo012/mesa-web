@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useEffect, useState } from "react";
+import React, { useRef, useCallback, useEffect, useState } from "react";
 import { Stage, Layer, Rect, Line, Group, Transformer } from "react-konva";
 import Konva from "konva";
 import { useCanvasStore } from "@/store/canvas.store";
@@ -24,6 +24,8 @@ function TableNode({
   onChange,
   stageWidth,
   stageHeight,
+  onDragStart,
+  onDragEnd,
 }: {
   table: TableItem;
   isSelected: boolean;
@@ -32,6 +34,8 @@ function TableNode({
   onChange: (patch: Partial<TableItem>) => void;
   stageWidth: number;
   stageHeight: number;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }) {
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -69,11 +73,13 @@ function TableNode({
         draggable
         onClick={onSelect}
         onTap={onSelect}
+        onDragStart={onDragStart}
         dragBoundFunc={(pos) => ({
           x: Math.max(minX, Math.min(maxX, pos.x)),
           y: Math.max(minY, Math.min(maxY, pos.y)),
         })}
         onDragEnd={(e) => {
+          onDragEnd?.();
           const x = Math.max(minX, Math.min(maxX, snap(e.target.x())));
           const y = Math.max(minY, Math.min(maxY, snap(e.target.y())));
           e.target.position({ x, y });
@@ -150,7 +156,7 @@ const GHOST_TABLE: TableItem = {
 
 export default function FloorCanvas({ width, height, bgColor, scale = 1 }: Props) {
   const {
-    tables, walls, selectedId, tool,
+    tables, walls, selectedId, tool, hiddenIds,
     setSelectedId, updateTable, removeTable, addTable, addWall, removeWall, undo, redo, setTool,
   } = useCanvasStore();
 
@@ -162,6 +168,7 @@ export default function FloorCanvas({ width, height, bgColor, scale = 1 }: Props
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const [previewLine, setPreviewLine] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const snap = (v: number) => Math.round(v / GRID) * GRID;
 
@@ -313,6 +320,18 @@ export default function FloorCanvas({ width, height, bgColor, scale = 1 }: Props
 
   const ghostCollision = ghostTable ? checkCollision(ghostTable, tables) : false;
 
+  // Grid lines for snap indicator
+  const gridLines: React.ReactElement[] = [];
+  if (isDragging) {
+    const GRID_STEP = GRID * 2;
+    for (let x = 0; x <= width; x += GRID_STEP) {
+      gridLines.push(<Line key={`gx${x}`} points={[x, 0, x, height]} stroke="rgba(37,99,235,0.15)" strokeWidth={0.5} listening={false} />);
+    }
+    for (let y = 0; y <= height; y += GRID_STEP) {
+      gridLines.push(<Line key={`gy${y}`} points={[0, y, width, y]} stroke="rgba(37,99,235,0.15)" strokeWidth={0.5} listening={false} />);
+    }
+  }
+
   return (
     <Stage
       ref={stageRef}
@@ -330,7 +349,10 @@ export default function FloorCanvas({ width, height, bgColor, scale = 1 }: Props
       <Layer>
         <Rect name="bg" x={0} y={0} width={width} height={height} fill={bgColor} />
 
-        {walls.map((w) => (
+        {/* Snap-to-grid overlay while dragging */}
+        {gridLines}
+
+        {walls.filter((w) => !hiddenIds.has(w.id)).map((w) => (
           <WallLine key={w.id} wall={w} tool={tool} onRemove={() => removeWall(w.id)} />
         ))}
 
@@ -346,7 +368,7 @@ export default function FloorCanvas({ width, height, bgColor, scale = 1 }: Props
           />
         )}
 
-        {tables.map((t) => (
+        {tables.filter((t) => !hiddenIds.has(t.id)).map((t) => (
           <TableNode
             key={t.id}
             table={t}
@@ -359,6 +381,8 @@ export default function FloorCanvas({ width, height, bgColor, scale = 1 }: Props
               else setSelectedId(t.id);
             }}
             onChange={(patch) => updateTable(t.id, patch)}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={() => setIsDragging(false)}
           />
         ))}
 

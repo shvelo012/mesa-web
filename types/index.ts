@@ -4,7 +4,7 @@ export type LayoutStyle = "LIST" | "CARD_GRID" | "TWO_COLUMN";
 export type DietaryTag = "vegan" | "vegetarian" | "gluten-free" | "dairy-free" | "spicy" | "nuts";
 export type TableShape = "RECTANGLE" | "CIRCLE" | "SQUARE";
 export type SectionType = "INDOOR" | "OUTDOOR" | "BAR" | "PRIVATE";
-export type ReservationStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
+export type ReservationStatus = "PENDING" | "CONFIRMED" | "SEATED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
 
 export type Permission =
   | "RESERVATIONS_READ"

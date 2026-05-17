@@ -9,8 +9,10 @@ import { api } from "@/lib/api";
 import { Floor } from "@/types";
 import Toolbar from "@/components/canvas/Toolbar";
 import TableProperties from "@/components/canvas/TableProperties";
+import LayerPanel from "@/components/canvas/LayerPanel";
 
 const FloorCanvas = dynamic(() => import("@/components/canvas/FloorCanvas"), { ssr: false });
+const FloorViewCanvas = dynamic(() => import("@/components/canvas/FloorViewCanvas"), { ssr: false });
 
 const TOOL_TIPS: Record<string, string> = {
   select: "Click a table to select it · Del / Backspace removes selected · Esc deselects",
@@ -27,6 +29,8 @@ export default function EditorPage() {
   const router = useRouter();
   const { setTables, setWalls, markClean } = useCanvasStore();
   const tool = useCanvasStore((s) => s.tool);
+  const previewTables = useCanvasStore((s) => s.tables);
+  const previewWalls = useCanvasStore((s) => s.walls);
 
   const [floor, setFloor] = useState<Floor | null>(null);
   const [saving, setSaving] = useState(false);
@@ -35,6 +39,8 @@ export default function EditorPage() {
   const [zoom, setZoom] = useState(1);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
   const prevToolRef = useRef(tool);
   const savingRef = useRef(saving);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -235,6 +241,24 @@ export default function EditorPage() {
 
         <div style={{ flex: 1 }} />
 
+        {/* Layer panel toggle */}
+        <button
+          onClick={() => setShowLayerPanel((v) => !v)}
+          title="Layer panel"
+          style={{ padding: "0.375rem 0.75rem", fontSize: "0.8125rem", fontWeight: 500, fontFamily: "inherit", border: "1px solid rgba(24,22,15,0.12)", borderRadius: "6px", cursor: "pointer", background: showLayerPanel ? "#eff6ff" : "#f5f3ef", color: showLayerPanel ? "#2563eb" : "#5c5248" }}
+        >
+          Layers
+        </button>
+
+        {/* Preview mode toggle */}
+        <button
+          onClick={() => setPreviewMode((v) => !v)}
+          title="Toggle guest preview"
+          style={{ padding: "0.375rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "1px solid", borderRadius: "6px", cursor: "pointer", background: previewMode ? "#c4410c" : "#f5f3ef", borderColor: previewMode ? "#c4410c" : "rgba(24,22,15,0.12)", color: previewMode ? "#fff" : "#5c5248" }}
+        >
+          {previewMode ? "✓ Preview" : "Preview"}
+        </button>
+
         {saveMsg && (
           <span style={{ fontSize: "0.875rem", fontWeight: 500, color: saveMsg === "Saved" ? "#16a34a" : "#dc2626" }}>
             {saveMsg === "Saved" ? "✓ Saved" : "⚠ Save failed"}
@@ -253,8 +277,16 @@ export default function EditorPage() {
 
       <Toolbar onSave={handleSave} saving={saving} />
 
+      {/* Preview mode banner */}
+      {previewMode && (
+        <div style={{ padding: "0.4rem 1rem", background: "#fef2ec", borderBottom: "1px solid rgba(196,65,12,0.2)", fontSize: "0.75rem", color: "#c4410c", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <span>Preview mode — showing guest view (read-only)</span>
+          <button onClick={() => setPreviewMode(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c4410c", fontSize: "0.8125rem", fontFamily: "inherit", fontWeight: 600 }}>Exit preview</button>
+        </div>
+      )}
+
       {/* Contextual tip bar */}
-      {!tipDismissed && (
+      {!tipDismissed && !previewMode && (
         <div
           style={{
             padding: "0.4rem 1rem",
@@ -311,7 +343,18 @@ export default function EditorPage() {
               flexShrink: 0,
             }}
           >
-            <FloorCanvas width={floor.width} height={floor.height} bgColor={floor.bgColor} scale={zoom} />
+            {previewMode ? (
+              <FloorViewCanvas
+                floor={{ ...floor, tables: previewTables, walls: previewWalls }}
+                selectedTableId={null}
+                onSelectTable={() => {}}
+                partySize={2}
+                occupiedIds={new Set()}
+                tableBookings={{}}
+              />
+            ) : (
+              <FloorCanvas width={floor.width} height={floor.height} bgColor={floor.bgColor} scale={zoom} />
+            )}
           </div>
 
           {/* Zoom controls */}
@@ -356,6 +399,23 @@ export default function EditorPage() {
             </button>
           </div>
         </div>
+
+        {/* Layer panel */}
+        {showLayerPanel && (
+          <aside
+            style={{
+              width: "200px",
+              flexShrink: 0,
+              background: "#ffffff",
+              borderLeft: "1px solid rgba(24,22,15,0.09)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            <LayerPanel />
+          </aside>
+        )}
 
         {/* Properties sidebar */}
         <aside

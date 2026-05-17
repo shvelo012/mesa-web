@@ -12,15 +12,17 @@ import GuestProfileModal from "@/components/reservations/GuestProfileModal";
 
 const TimelineView = dynamic(() => import("@/components/reservations/TimelineView"), { ssr: false });
 const LiveFloorPanel = dynamic(() => import("@/components/reservations/LiveFloorPanel"), { ssr: false });
+const KanbanView = dynamic(() => import("@/components/reservations/KanbanView"), { ssr: false });
 
 const POLL_MS = 30_000;
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  PENDING:   { bg: "#fffbeb", color: "#b45309", label: "Pending" },
-  CONFIRMED: { bg: "#f0fdf4", color: "#16a34a", label: "Confirmed" },
-  CANCELLED: { bg: "#fef2f2", color: "#dc2626", label: "Cancelled" },
-  COMPLETED: { bg: "#eff6ff", color: "#2563eb", label: "Completed" },
-  NO_SHOW:   { bg: "#f8f8f7", color: "#9a9088", label: "No-show" },
+  PENDING:   { bg: "#fffbeb", color: "#b45309",  label: "Pending" },
+  CONFIRMED: { bg: "#f0fdf4", color: "#16a34a",  label: "Confirmed" },
+  SEATED:    { bg: "#f5f3ff", color: "#7c3aed",  label: "Seated" },
+  CANCELLED: { bg: "#fef2f2", color: "#dc2626",  label: "Cancelled" },
+  COMPLETED: { bg: "#eff6ff", color: "#2563eb",  label: "Completed" },
+  NO_SHOW:   { bg: "#f8f8f7", color: "#9a9088",  label: "No-show" },
 };
 
 type ReservationItem = {
@@ -53,6 +55,7 @@ type WaitlistItem = {
 };
 
 type Tab = "PENDING" | "CONFIRMED" | "ALL" | "PAST" | "WAITLIST";
+type ViewMode = "list" | "timeline" | "kanban";
 
 function timeRangesOverlap(s1: string, e1: string, s2: string, e2: string) {
   return s1 <= e2 && e1 >= s2;
@@ -79,12 +82,12 @@ function ReservationsPageInner() {
 
   const tabParam = (searchParams.get("tab") as Tab) || "PENDING";
   const dateParam = searchParams.get("date") || "";
-  const viewParam = (searchParams.get("view") as "list" | "timeline") || "list";
+  const viewParam = (searchParams.get("view") as ViewMode) || "list";
   const searchParam = searchParams.get("search") || "";
 
   const [tab, setTab] = useState<Tab>(tabParam);
   const [dateFilter, setDateFilter] = useState(dateParam);
-  const [viewMode, setViewMode] = useState<"list" | "timeline">(viewParam);
+  const [viewMode, setViewMode] = useState<ViewMode>(viewParam);
   const [searchQuery, setSearchQuery] = useState(searchParam);
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam);
 
@@ -127,7 +130,7 @@ function ReservationsPageInner() {
     pushParams({ tab: t });
   }
 
-  function changeView(v: "list" | "timeline") {
+  function changeView(v: ViewMode) {
     setViewMode(v);
     pushParams({ view: v });
   }
@@ -229,15 +232,20 @@ function ReservationsPageInner() {
   }, [debouncedSearch, dateFilter, tableFilter]); // eslint-disable-line
 
   async function handleStatus(id: string, status: string) {
+    const prev = reservations.find((r) => r.id === id)?.status;
     setActionLoading(id + status);
+    // Optimistic update
+    setReservations((rs) => rs.map((r) => r.id === id ? { ...r, status } : r));
     try {
-      const { data } = await api.patch(`/reservations/${id}/status`, { status });
-      setReservations((rs) => rs.map((r) => r.id === id ? { ...r, status: data.status } : r));
+      await api.patch(`/reservations/${id}/status`, { status });
       if (status !== "PENDING") prevPendingIds.current.delete(id);
-      await fetchReservations(false);
       if (status === "CONFIRMED") success("Reservation confirmed");
       else if (status === "CANCELLED") info("Reservation cancelled");
+      else if (status === "SEATED") success("Guest seated");
+      else if (status === "COMPLETED") success("Reservation completed");
     } catch {
+      // Revert on failure
+      if (prev !== undefined) setReservations((rs) => rs.map((r) => r.id === id ? { ...r, status: prev } : r));
       toastError("Failed to update reservation");
     } finally {
       setActionLoading(null);
@@ -299,7 +307,7 @@ function ReservationsPageInner() {
 
   const filtered = reservations.filter((r) => {
     if (tab === "PENDING") return r.status === "PENDING";
-    if (tab === "CONFIRMED") return r.status === "CONFIRMED" && r.date >= today;
+    if (tab === "CONFIRMED") return ["CONFIRMED", "SEATED"].includes(r.status) && r.date >= today;
     if (tab === "PAST") return r.date < today || ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(r.status);
     if (tab === "WAITLIST") return false;
     return true;
@@ -370,18 +378,15 @@ function ReservationsPageInner() {
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.875rem" }}>
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", margin: 0 }}>Reservations</h1>
               <div style={{ display: "flex", gap: "0.375rem" }}>
-                <button
-                  onClick={() => changeView("list")}
-                  style={{ padding: "0.35rem 0.625rem", fontSize: "0.8125rem", border: "1px solid", borderRadius: "6px", cursor: "pointer", background: viewMode === "list" ? "#18160f" : "#fff", borderColor: viewMode === "list" ? "#18160f" : "rgba(24,22,15,0.12)", color: viewMode === "list" ? "#fff" : "#5c5248", fontFamily: "inherit" }}
-                >
-                  List
-                </button>
-                <button
-                  onClick={() => changeView("timeline")}
-                  style={{ padding: "0.35rem 0.625rem", fontSize: "0.8125rem", border: "1px solid", borderRadius: "6px", cursor: "pointer", background: viewMode === "timeline" ? "#18160f" : "#fff", borderColor: viewMode === "timeline" ? "#18160f" : "rgba(24,22,15,0.12)", color: viewMode === "timeline" ? "#fff" : "#5c5248", fontFamily: "inherit" }}
-                >
-                  Timeline
-                </button>
+                {(["list", "kanban", "timeline"] as ViewMode[]).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => changeView(v)}
+                    style={{ padding: "0.35rem 0.625rem", fontSize: "0.8125rem", border: "1px solid", borderRadius: "6px", cursor: "pointer", background: viewMode === v ? "#18160f" : "#fff", borderColor: viewMode === v ? "#18160f" : "rgba(24,22,15,0.12)", color: viewMode === v ? "#fff" : "#5c5248", fontFamily: "inherit", textTransform: "capitalize" }}
+                  >
+                    {v}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -501,8 +506,16 @@ function ReservationsPageInner() {
           )}
 
           {/* Main content */}
-          <div className="anim-2 card" style={{ opacity: 0, overflow: "hidden" }}>
-            {tab === "WAITLIST" ? (
+          <div className="anim-2 card" style={{ opacity: 0, overflow: viewMode === "kanban" ? "auto" : "hidden" }}>
+            {viewMode === "kanban" && tab !== "WAITLIST" ? (
+              <KanbanView
+                reservations={viewMode === "kanban" ? reservations.filter((r) => !["CANCELLED", "NO_SHOW"].includes(r.status)) : []}
+                onStatusChange={handleStatus}
+                actionLoading={actionLoading}
+                canWrite={can("RESERVATIONS_WRITE")}
+                onGuestClick={(email, name) => setGuestProfile({ email, name })}
+              />
+            ) : tab === "WAITLIST" ? (
               /* Waitlist tab */
               waitlist.length === 0 ? (
                 <div style={{ padding: "3rem 2rem", textAlign: "center" }}>
@@ -601,6 +614,7 @@ function ReservationsPageInner() {
                   const st = STATUS_STYLE[r.status] || STATUS_STYLE.PENDING;
                   const isPending = r.status === "PENDING";
                   const isConfirmed = r.status === "CONFIRMED";
+                  const isSeated = r.status === "SEATED";
                   const busy = !!actionLoading;
                   const overlaps = isPending ? getOverlappingPending(reservations, r) : [];
                   const hasOverlap = overlaps.length > 0;
@@ -675,21 +689,23 @@ function ReservationsPageInner() {
                       {/* Party */}
                       <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#18160f" }}>{r.partySize}p</span>
 
-                      {/* Status */}
-                      <span className="badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-
-                      {/* Actions */}
-                      <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap", alignItems: "center" }}>
+                      {/* Status + conflict badge */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                        <span className="badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                         {isPending && hasOverlap && (
                           <button
                             onClick={() => setOverlapModal({ isOpen: true, target: r, group: overlaps })}
                             disabled={busy}
-                            title="Overlapping requests"
-                            style={{ padding: "0.35rem 0.55rem", fontSize: "0.8125rem", fontWeight: 700, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#dc2626", color: "#fff", lineHeight: 1 }}
+                            title="Click to resolve conflict"
+                            style={{ padding: "0.15rem 0.5rem", fontSize: "0.6rem", fontWeight: 700, fontFamily: "inherit", border: "none", borderRadius: "999px", cursor: "pointer", background: "#dc2626", color: "#fff", lineHeight: 1.4, whiteSpace: "nowrap" }}
                           >
-                            !
+                            ⚠ Conflict
                           </button>
                         )}
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap", alignItems: "center" }}>
                         {isPending && can("RESERVATIONS_WRITE") && (
                           <>
                             <button
@@ -709,6 +725,24 @@ function ReservationsPageInner() {
                           </>
                         )}
                         {isConfirmed && can("RESERVATIONS_WRITE") && (
+                          <>
+                            <button
+                              onClick={() => handleStatus(r.id, "SEATED")}
+                              disabled={busy}
+                              style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#ede9fe", color: "#7c3aed", opacity: actionLoading === r.id + "SEATED" ? 0.65 : 1 }}
+                            >
+                              {actionLoading === r.id + "SEATED" ? "…" : "Seat"}
+                            </button>
+                            <button
+                              onClick={() => handleStatus(r.id, "CANCELLED")}
+                              disabled={busy}
+                              style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#f5f3ef", color: "#9a9088", opacity: actionLoading === r.id + "CANCELLED" ? 0.65 : 1 }}
+                            >
+                              {actionLoading === r.id + "CANCELLED" ? "…" : "Cancel"}
+                            </button>
+                          </>
+                        )}
+                        {isSeated && can("RESERVATIONS_WRITE") && (
                           <>
                             <button
                               onClick={() => handleStatus(r.id, "COMPLETED")}
