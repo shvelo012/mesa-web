@@ -385,7 +385,7 @@ export default function DashboardPage() {
 
                   {pendingPreset && (
                     <div style={{ fontSize: "0.75rem", color: "#5c5248", marginBottom: "0.25rem" }}>
-                      Preset "{pendingPreset.name}" selected — includes {pendingPreset.tables.length} table{pendingPreset.tables.length !== 1 ? "s" : ""}{pendingPreset.walls.length ? ` and ${pendingPreset.walls.length} wall${pendingPreset.walls.length !== 1 ? "s" : ""}` : ""}.
+                      Preset &quot;{pendingPreset.name}&quot; selected — includes {pendingPreset.tables.length} table{pendingPreset.tables.length !== 1 ? "s" : ""}{pendingPreset.walls.length ? ` and ${pendingPreset.walls.length} wall${pendingPreset.walls.length !== 1 ? "s" : ""}` : ""}.
                     </div>
                   )}
 

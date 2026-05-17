@@ -31,11 +31,13 @@ export default function EditorPage() {
   const [floor, setFloor] = useState<Floor | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "pending" | "saving" | "saved">("idle");
   const [zoom, setZoom] = useState(1);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(false);
   const prevToolRef = useRef(tool);
   const savingRef = useRef(saving);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   savingRef.current = saving;
 
   useEffect(() => {
@@ -53,7 +55,32 @@ export default function EditorPage() {
       setTables(data.tables || []);
       setWalls(data.walls || []);
     });
-  }, [floorId, user, _hasHydrated]);
+  }, [floorId, user, _hasHydrated]); // eslint-disable-line
+
+  // Autosave: 3s after isDirty becomes true
+  const isDirty = useCanvasStore((s) => s.isDirty);
+  useEffect(() => {
+    if (!isDirty) {
+      setAutoSaveStatus("idle");
+      return;
+    }
+    setAutoSaveStatus("pending");
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      if (savingRef.current) return;
+      setAutoSaveStatus("saving");
+      const { tables, walls } = useCanvasStore.getState();
+      try {
+        await api.post(`/floors/${floorId}/layout`, { tables, walls });
+        markClean();
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 2500);
+      } catch {
+        setAutoSaveStatus("idle");
+      }
+    }, 3000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [isDirty, floorId, markClean]);
 
   // Ctrl+S to save
   useEffect(() => {
@@ -212,6 +239,15 @@ export default function EditorPage() {
           <span style={{ fontSize: "0.875rem", fontWeight: 500, color: saveMsg === "Saved" ? "#16a34a" : "#dc2626" }}>
             {saveMsg === "Saved" ? "✓ Saved" : "⚠ Save failed"}
           </span>
+        )}
+        {!saveMsg && autoSaveStatus === "pending" && (
+          <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>Unsaved changes</span>
+        )}
+        {!saveMsg && autoSaveStatus === "saving" && (
+          <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>Autosaving…</span>
+        )}
+        {!saveMsg && autoSaveStatus === "saved" && (
+          <span style={{ fontSize: "0.8125rem", color: "#16a34a", fontWeight: 500 }}>✓ Autosaved</span>
         )}
       </div>
 

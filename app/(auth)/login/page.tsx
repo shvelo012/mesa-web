@@ -73,7 +73,7 @@ export default function LoginPage() {
 
           <div style={{ marginTop: "1.75rem", paddingTop: "1.75rem", borderTop: "1px solid rgba(24,22,15,0.08)", textAlign: "center" }}>
             <p style={{ fontSize: "0.9375rem", color: "#5c5248" }}>
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/register" style={{ color: "#c4410c", fontWeight: 600, textDecoration: "none" }}>
                 Sign up free
               </Link>

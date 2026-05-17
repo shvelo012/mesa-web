@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
 import { Restaurant, Floor, TableItem, Menu } from "@/types";
 import { useAuthStore } from "@/store/auth.store";
+import { useToast } from "@/components/ui/Toast";
 import MenuDisplay from "@/components/menu/MenuDisplay";
 
 const FloorViewCanvas = dynamic(() => import("@/components/canvas/FloorViewCanvas"), { ssr: false });
@@ -50,6 +51,7 @@ export default function RestaurantDetailPage() {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const { success } = useToast();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
@@ -59,6 +61,10 @@ export default function RestaurantDetailPage() {
   const [editingContact, setEditingContact] = useState(false);
   const [bookingMsg, setBookingMsg] = useState("");
   const [bookingErr, setBookingErr] = useState("");
+  const [waitlistMode, setWaitlistMode] = useState(false);
+  const [waitlistGuest, setWaitlistGuest] = useState({ name: "", email: "", phone: "", notes: "" });
+  const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
+  const [waitlistDone, setWaitlistDone] = useState(false);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
@@ -179,15 +185,45 @@ export default function RestaurantDetailPage() {
         }
         if (userContact.phone.trim()) payload.guestPhone = userContact.phone.trim();
       }
-      await api.post("/reservations", payload);
-      setBookingMsg(
-        "Request sent. The restaurant will review your reservation — you'll receive an email once it's accepted."
-      );
-      setSelectedTable(null);
-      if (!user) setGuest({ name: "", email: "", phone: "" });
+      const { data } = await api.post("/reservations", payload);
+      success("Reservation request sent!");
+      if (data.confirmationToken) {
+        router.push(`/reservation/${data.confirmationToken}`);
+      } else {
+        setBookingMsg("Request sent. The restaurant will review your reservation — you'll receive an email once it's accepted.");
+        setSelectedTable(null);
+        if (!user) setGuest({ name: "", email: "", phone: "" });
+      }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setBookingErr(msg || "Booking failed");
+    }
+  }
+
+  async function handleWaitlist() {
+    const name = user ? userContact.name : waitlistGuest.name;
+    const email = user ? userContact.email : waitlistGuest.email;
+    if (!name.trim() || !email.trim()) { setBookingErr("Name and email required for waitlist"); return; }
+    if (!booking.date) { setBookingErr("Please select a date"); return; }
+    setWaitlistSubmitting(true);
+    setBookingErr("");
+    try {
+      await api.post("/waitlist", {
+        restaurantId,
+        date: booking.date,
+        partySize: +booking.partySize,
+        guestName: name.trim(),
+        guestEmail: email.trim(),
+        guestPhone: (user ? userContact.phone : waitlistGuest.phone).trim() || undefined,
+        notes: (user ? "" : waitlistGuest.notes).trim() || undefined,
+      });
+      setWaitlistDone(true);
+      success("Added to waitlist! We'll contact you if a table opens.");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setBookingErr(msg || "Failed to join waitlist");
+    } finally {
+      setWaitlistSubmitting(false);
     }
   }
 
@@ -313,9 +349,51 @@ export default function RestaurantDetailPage() {
 
         <aside style={{ width: "316px", flexShrink: 0 }} className="anim-3">
           <div className="card" style={{ padding: "1.5rem" }}>
-            <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem", letterSpacing: "-0.01em" }}>
+            <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", marginBottom: "0.875rem", letterSpacing: "-0.01em" }}>
               Make a Reservation
             </h3>
+
+            {/* Step indicator */}
+            {(() => {
+              const step1 = !!(booking.date && booking.startTime && booking.endTime);
+              const step2 = !!selectedTable;
+              const step3 = !!(user ? (userContact.name && userContact.email) : (guest.name && guest.email));
+              const currentStep = !step1 ? 1 : !step2 ? 2 : !step3 ? 3 : 4;
+              const steps = [
+                { n: 1, label: "Date & Time" },
+                { n: 2, label: "Table" },
+                { n: 3, label: "Details" },
+                { n: 4, label: "Confirm" },
+              ];
+              return (
+                <div style={{ display: "flex", gap: "0", marginBottom: "1.25rem" }}>
+                  {steps.map((s, i) => {
+                    const done = s.n < currentStep;
+                    const active = s.n === currentStep;
+                    return (
+                      <div key={s.n} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
+                        {i > 0 && (
+                          <div style={{ position: "absolute", left: 0, top: "11px", width: "50%", height: "2px", background: done || active ? "#c4410c" : "rgba(24,22,15,0.1)", transition: "background 0.3s" }} />
+                        )}
+                        {i < steps.length - 1 && (
+                          <div style={{ position: "absolute", right: 0, top: "11px", width: "50%", height: "2px", background: done ? "#c4410c" : "rgba(24,22,15,0.1)", transition: "background 0.3s" }} />
+                        )}
+                        <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: done ? "#c4410c" : active ? "#c4410c" : "#f0ede8", border: `2px solid ${done || active ? "#c4410c" : "rgba(24,22,15,0.15)"}`, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, transition: "all 0.3s" }}>
+                          {done ? (
+                            <span style={{ fontSize: "0.625rem", color: "#fff", fontWeight: 700 }}>✓</span>
+                          ) : (
+                            <span style={{ fontSize: "0.625rem", color: active ? "#fff" : "#9a9088", fontWeight: 700 }}>{s.n}</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: "0.6rem", color: active ? "#c4410c" : done ? "#5c5248" : "#9a9088", fontWeight: active ? 700 : 400, marginTop: "0.2rem", textAlign: "center" }}>
+                          {s.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {selectedTable ? (
               <div style={{ background: "#fef2ec", border: "1px solid rgba(196,65,12,0.2)", borderRadius: "8px", marginBottom: "1.25rem", overflow: "hidden" }}>
@@ -491,6 +569,46 @@ export default function RestaurantDetailPage() {
               <button onClick={handleBook} className="btn btn-primary btn-md" style={{ width: "100%", marginTop: "0.25rem" }}>
                 Reserve table
               </button>
+
+              {/* Waitlist section — show when time is set, availability fetched, and all tables are occupied */}
+              {availFetched && booking.startTime && booking.endTime && occupiedIds.size > 0 && !selectedTable && !bookingMsg && (
+                <div style={{ marginTop: "0.75rem", padding: "0.875rem 1rem", background: "#f5f3ef", borderRadius: "8px", border: "1px solid rgba(24,22,15,0.1)" }}>
+                  {waitlistDone ? (
+                    <p style={{ fontSize: "0.875rem", color: "#16a34a", fontWeight: 600, textAlign: "center" }}>
+                      ✓ You&apos;re on the waitlist for {booking.date}
+                    </p>
+                  ) : waitlistMode ? (
+                    <>
+                      <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#18160f", marginBottom: "0.625rem" }}>
+                        Join waitlist for {booking.date}
+                      </p>
+                      {!user && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "0.625rem" }}>
+                          <input placeholder="Your name *" value={waitlistGuest.name} onChange={(e) => setWaitlistGuest((g) => ({ ...g, name: e.target.value }))} className="input" />
+                          <input type="email" placeholder="Email *" value={waitlistGuest.email} onChange={(e) => setWaitlistGuest((g) => ({ ...g, email: e.target.value }))} className="input" />
+                          <input type="tel" placeholder="Phone (optional)" value={waitlistGuest.phone} onChange={(e) => setWaitlistGuest((g) => ({ ...g, phone: e.target.value }))} className="input" />
+                          <textarea placeholder="Notes (optional)" value={waitlistGuest.notes} onChange={(e) => setWaitlistGuest((g) => ({ ...g, notes: e.target.value }))} rows={2} className="input" />
+                        </div>
+                      )}
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <button onClick={handleWaitlist} disabled={waitlistSubmitting} className="btn btn-primary btn-sm" style={{ flex: 1 }}>
+                          {waitlistSubmitting ? "Joining…" : "Join waitlist"}
+                        </button>
+                        <button onClick={() => setWaitlistMode(false)} className="btn btn-ghost btn-sm">Cancel</button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: "0.8125rem", color: "#5c5248", marginBottom: "0.5rem" }}>
+                        No tables available at this time. Want to be notified if one opens up?
+                      </p>
+                      <button onClick={() => setWaitlistMode(true)} className="btn btn-outline btn-sm" style={{ width: "100%" }}>
+                        Join waitlist
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </aside>

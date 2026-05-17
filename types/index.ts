@@ -138,6 +138,7 @@ export interface RestaurantStaff {
 
 export interface Reservation {
   id: string;
+  confirmationToken?: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -151,4 +152,30 @@ export interface Reservation {
   tableId: string;
   table?: TableItem;
   user?: User;
+}
+
+export type WaitlistStatus = "WAITING" | "NOTIFIED" | "CONFIRMED" | "CANCELLED";
+
+export interface WaitlistEntry {
+  id: string;
+  restaurantId: string;
+  date: string;
+  partySize: number;
+  guestName: string;
+  guestEmail: string;
+  guestPhone?: string | null;
+  userId?: string | null;
+  notes?: string | null;
+  status: WaitlistStatus;
+  position: number;
+  createdAt: string;
+}
+
+export interface GuestNote {
+  id: string;
+  restaurantId: string;
+  guestEmail: string;
+  note: string;
+  authorId?: string | null;
+  createdAt: string;
 }
