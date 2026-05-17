@@ -479,22 +479,13 @@ function ReservationsPageInner() {
               </span>
               <div style={{ flex: 1 }} />
               {can("RESERVATIONS_WRITE") && (
-                <>
-                  <button
-                    onClick={() => handleBulkStatus("CONFIRMED")}
-                    disabled={bulkLoading}
-                    style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#16a34a", color: "#fff", opacity: bulkLoading ? 0.7 : 1 }}
-                  >
-                    {bulkLoading ? "…" : "Confirm all"}
-                  </button>
-                  <button
-                    onClick={() => handleBulkStatus("CANCELLED")}
-                    disabled={bulkLoading}
-                    style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#fef2f2", color: "#dc2626", opacity: bulkLoading ? 0.7 : 1 }}
-                  >
-                    {bulkLoading ? "…" : "Cancel all"}
-                  </button>
-                </>
+                <button
+                  onClick={() => handleBulkStatus("CANCELLED")}
+                  disabled={bulkLoading}
+                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#fef2f2", color: "#dc2626", opacity: bulkLoading ? 0.7 : 1 }}
+                >
+                  {bulkLoading ? "…" : "Cancel selected"}
+                </button>
               )}
               <button
                 onClick={() => setSelectedIds(new Set())}

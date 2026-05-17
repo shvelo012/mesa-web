@@ -64,7 +64,6 @@ export default function DashboardPage() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [allReservations, setAllReservations] = useState<ResDashItem[]>([]);
-  const [confirmingAll, setConfirmingAll] = useState(false);
 
   const [newFloorName, setNewFloorName] = useState("");
   const [newFloorType, setNewFloorType] = useState("INDOOR");
@@ -120,20 +119,6 @@ export default function DashboardPage() {
       fetchReservations(),
     ]).finally(() => setLoading(false));
   }, [user, _hasHydrated]); // eslint-disable-line
-
-  async function confirmAllPending() {
-    const ids = allReservations.filter((r) => r.status === "PENDING").map((r) => r.id);
-    if (!ids.length) return;
-    setConfirmingAll(true);
-    try {
-      await api.post("/reservations/bulk-status", { ids, status: "CONFIRMED" });
-      setAllReservations((rs) => rs.map((r) => r.status === "PENDING" ? { ...r, status: "CONFIRMED" } : r));
-    } catch {
-      alert("Failed to confirm reservations");
-    } finally {
-      setConfirmingAll(false);
-    }
-  }
 
   async function addFloor() {
     if (!newFloorName.trim()) return;
@@ -334,15 +319,8 @@ export default function DashboardPage() {
                 </span>
                 <div style={{ flex: 1 }} />
                 <Link href="/manage-reservations?tab=PENDING" style={{ textDecoration: "none" }}>
-                  <button className="btn btn-ghost btn-sm" style={{ borderColor: "rgba(180,83,9,0.3)", color: "#b45309" }}>Review one by one</button>
+                  <button className="btn btn-ghost btn-sm" style={{ borderColor: "rgba(180,83,9,0.3)", color: "#b45309" }}>Review reservations</button>
                 </Link>
-                <button
-                  onClick={confirmAllPending}
-                  disabled={confirmingAll}
-                  style={{ padding: "0.375rem 1rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: confirmingAll ? "not-allowed" : "pointer", background: "#16a34a", color: "#fff", opacity: confirmingAll ? 0.7 : 1 }}
-                >
-                  {confirmingAll ? "Confirming…" : `Confirm all ${pending}`}
-                </button>
               </div>
             )}
 
@@ -611,15 +589,6 @@ export default function DashboardPage() {
                 <div className="card" style={{ padding: "1.25rem 1.5rem" }}>
                   <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#5c5248", marginBottom: "0.625rem" }}>Quick actions</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    {pending > 0 && (
-                      <button
-                        onClick={confirmAllPending}
-                        disabled={confirmingAll}
-                        style={{ width: "100%", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "8px", cursor: confirmingAll ? "not-allowed" : "pointer", background: "#16a34a", color: "#fff", opacity: confirmingAll ? 0.7 : 1, textAlign: "center" }}
-                      >
-                        {confirmingAll ? "Confirming…" : `Confirm all ${pending} pending`}
-                      </button>
-                    )}
                     <Link href="/new-booking" style={{ textDecoration: "none" }}>
                       <button style={{ width: "100%", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", border: "1px solid rgba(24,22,15,0.12)", borderRadius: "8px", cursor: "pointer", background: "#fff", color: "#18160f", textAlign: "center" }}>
                         + New manual booking
