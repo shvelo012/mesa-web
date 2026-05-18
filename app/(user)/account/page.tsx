@@ -1,18 +1,40 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 import ChangePasswordForm from "@/components/ui/ChangePasswordForm";
+import StarRating from "@/components/reviews/StarRating";
+import { api } from "@/lib/api";
+import { Review } from "@/types";
 
 export default function AccountPage() {
   const { user, _hasHydrated, logout } = useAuthStore();
   const router = useRouter();
+  const [myReviews, setMyReviews] = useState<Review[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (_hasHydrated && !user) router.push("/login");
   }, [user, _hasHydrated, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    api.get("/reviews/me").then(({ data }) => setMyReviews(data)).catch(() => {});
+  }, [user]);
+
+  async function deleteReview(id: string) {
+    setDeletingId(id);
+    try {
+      await api.delete(`/reviews/${id}`);
+      setMyReviews((r) => r.filter((x) => x.id !== id));
+    } catch {
+      // silently ignore
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   if (!user) return null;
 
@@ -60,11 +82,51 @@ export default function AccountPage() {
           </div>
         </div>
 
-        <div className="anim-3 card" style={{ opacity: 0, padding: "1.75rem" }}>
+        <div className="anim-3 card" style={{ opacity: 0, padding: "1.75rem", marginBottom: "1.25rem" }}>
           <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>
             Change password
           </h2>
           <ChangePasswordForm />
+        </div>
+
+        <div className="anim-4 card" style={{ opacity: 0, padding: "1.75rem" }}>
+          <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>
+            My Reviews
+          </h2>
+          {myReviews.length === 0 ? (
+            <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>No reviews yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+              {myReviews.map((r) => (
+                <div key={r.id} style={{ borderBottom: "1px solid rgba(24,22,15,0.07)", paddingBottom: "0.875rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                    <Link
+                      href={`/restaurants/${r.restaurant?.id ?? r.restaurantId}`}
+                      style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f", textDecoration: "none" }}
+                    >
+                      {r.restaurant?.name ?? "Restaurant"}
+                    </Link>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <StarRating value={r.stars} readonly size={13} />
+                      <span style={{ fontSize: "0.75rem", color: "#9a9088" }}>
+                        {new Date(r.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  {r.edited && <span style={{ fontSize: "0.7rem", color: "#9a9088" }}>(edited)</span>}
+                  {r.text && <p style={{ fontSize: "0.875rem", color: "#3c3530", marginTop: "0.25rem", lineHeight: 1.5 }}>{r.text}</p>}
+                  <button
+                    onClick={() => deleteReview(r.id)}
+                    disabled={deletingId === r.id}
+                    className="btn btn-ghost btn-sm"
+                    style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#dc2626" }}
+                  >
+                    {deletingId === r.id ? "Deleting…" : "Delete"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

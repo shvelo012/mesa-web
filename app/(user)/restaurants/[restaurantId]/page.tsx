@@ -4,10 +4,11 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
-import { Restaurant, Floor, TableItem, Menu } from "@/types";
+import { Restaurant, Floor, TableItem, Menu, Review } from "@/types";
 import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
 import MenuDisplay from "@/components/menu/MenuDisplay";
+import ReviewList from "@/components/reviews/ReviewList";
 
 const FloorViewCanvas = dynamic(
   () => import("@/components/canvas/FloorViewCanvas"),
@@ -126,6 +127,10 @@ export default function RestaurantDetailPage() {
   const [waitlistDone, setWaitlistDone] = useState(false);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [avgStars, setAvgStars] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [canReview, setCanReview] = useState(false);
 
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set());
   const [tableBookings, setTableBookings] = useState<
@@ -157,7 +162,22 @@ export default function RestaurantDetailPage() {
       .get(`/menus/public/${restaurantId}`)
       .then(({ data }) => setMenus(data))
       .catch(() => {});
+    api.get(`/restaurants/${restaurantId}/reviews`).then(({ data }) => {
+      setReviews(data.reviews);
+      setAvgStars(data.avgStars);
+      setReviewCount(data.count);
+    }).catch(() => {});
   }, [restaurantId]);
+
+  useEffect(() => {
+    if (!user) { setCanReview(false); return; }
+    api.get("/reservations/my")
+      .then(({ data }) => {
+        const all: { status: string; table?: { floor?: { restaurantId?: string } } }[] = data;
+        setCanReview(all.some((r) => r.status === "COMPLETED" && r.table?.floor?.restaurantId === restaurantId));
+      })
+      .catch(() => setCanReview(false));
+  }, [user, restaurantId]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -1656,6 +1676,28 @@ export default function RestaurantDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Reviews section */}
+      <div
+        id="reviews-section"
+        style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem 3rem" }}
+        className="anim-5"
+      >
+        <div style={{ borderTop: "1px solid rgba(24,22,15,0.09)", paddingTop: "2rem" }}>
+          <h2 style={{ fontSize: "1.375rem", fontWeight: 800, color: "#18160f", letterSpacing: "-0.02em", margin: "0 0 1.5rem" }}>
+            Reviews
+          </h2>
+          <ReviewList
+            reviews={reviews}
+            avgStars={avgStars}
+            count={reviewCount}
+            currentUserId={user?.id}
+            restaurantId={restaurantId}
+            canReview={canReview}
+            onChanged={(r, avg, cnt) => { setReviews(r); setAvgStars(avg); setReviewCount(cnt); }}
+          />
+        </div>
+      </div>
 
       {lightbox && (
         <div

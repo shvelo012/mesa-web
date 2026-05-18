@@ -180,3 +180,16 @@ export interface GuestNote {
   authorId?: string | null;
   createdAt: string;
 }
+
+export interface Review {
+  id: string;
+  userId: string;
+  restaurantId: string;
+  stars: number;
+  text: string | null;
+  edited: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user?: { id: string; name: string };
+  restaurant?: { id: string; name: string; slug: string };
+}
