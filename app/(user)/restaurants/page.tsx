@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { Restaurant } from "@/types";
 import { useAuthStore } from "@/store/auth.store";
+import StarRating from "@/components/reviews/StarRating";
 
 const CUISINE_COLORS: Record<string, string> = {
   Italian: "#dc2626", Japanese: "#7c3aed", French: "#1d4ed8",
@@ -44,11 +45,23 @@ function RestaurantCard({ r }: { r: Restaurant }) {
               {r.description}
             </p>
           )}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
             <span style={{ fontSize: "0.8125rem", color: "#9a9088", display: "flex", alignItems: "center", gap: "0.35rem" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
               {r.openTime} – {r.closeTime}
             </span>
+            {r.avgStars != null ? (
+              <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <StarRating value={Math.round(r.avgStars)} readonly size={13} />
+                <span style={{ fontSize: "0.75rem", color: "#9a9088" }}>
+                  {Number(r.avgStars).toFixed(1)} ({r.reviewCount})
+                </span>
+              </span>
+            ) : (
+              <span style={{ fontSize: "0.75rem", color: "#c8c4be" }}>No reviews</span>
+            )}
+          </div>
+          <div style={{ marginTop: "0.75rem", textAlign: "right" }}>
             <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#c4410c" }}>Reserve →</span>
           </div>
         </div>

@@ -45,6 +45,8 @@ export interface Restaurant {
   closeTime: string;
   ownerId: string;
   floors?: Floor[];
+  avgStars?: number | null;
+  reviewCount?: number;
 }
 
 export interface Floor {
