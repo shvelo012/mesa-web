@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { useAuthStore } from "@/store/auth.store";
 
 export default function VerifyEmailPendingPage() {
-  const { user } = useAuthStore();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") ?? "";
+
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [error, setError] = useState("");
@@ -15,7 +17,7 @@ export default function VerifyEmailPendingPage() {
     setResending(true);
     setError("");
     try {
-      await api.post("/auth/resend-verification");
+      await api.post("/auth/resend-verification", { email });
       setResent(true);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -42,13 +44,13 @@ export default function VerifyEmailPendingPage() {
           <p style={{ fontSize: "0.9375rem", color: "#5c5248", lineHeight: 1.6, marginBottom: "0.5rem" }}>
             We sent a verification link to
           </p>
-          {user?.email && (
+          {email && (
             <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f", marginBottom: "1.5rem" }}>
-              {user.email}
+              {email}
             </p>
           )}
           <p style={{ fontSize: "0.875rem", color: "#9a9088", marginBottom: "2rem", lineHeight: 1.6 }}>
-            Click the link in the email to verify your account. You can use Mesa while you wait — some features require a verified email.
+            Click the link to activate your account. You won&apos;t be able to sign in until your email is verified.
           </p>
 
           {resent ? (
@@ -64,7 +66,7 @@ export default function VerifyEmailPendingPage() {
               )}
               <button
                 onClick={handleResend}
-                disabled={resending}
+                disabled={resending || !email}
                 className="btn btn-outline btn-md"
                 style={{ width: "100%", marginBottom: "1rem" }}
               >
@@ -73,11 +75,8 @@ export default function VerifyEmailPendingPage() {
             </>
           )}
 
-          <Link
-            href={user?.role === "RESTAURANT_OWNER" ? "/dashboard" : "/restaurants"}
-            style={{ fontSize: "0.875rem", color: "#c4410c", fontWeight: 600, textDecoration: "none" }}
-          >
-            Continue to {user?.role === "RESTAURANT_OWNER" ? "dashboard" : "restaurants"} →
+          <Link href="/login" style={{ fontSize: "0.875rem", color: "#9a9088", textDecoration: "none" }}>
+            Back to sign in
           </Link>
         </div>
       </div>

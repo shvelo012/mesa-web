@@ -25,7 +25,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(form);
-      router.push("/verify-email/pending");
+      router.push(`/verify-email/pending?email=${encodeURIComponent(form.email)}`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(msg || "Registration failed");

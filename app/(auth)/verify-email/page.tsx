@@ -26,7 +26,7 @@ export default function VerifyEmailPage() {
         markEmailVerified();
         setStatus("success");
         setTimeout(() => {
-          router.push(user?.role === "RESTAURANT_OWNER" ? "/dashboard" : "/restaurants");
+          router.push("/login");
         }, 2500);
       })
       .catch((err: unknown) => {

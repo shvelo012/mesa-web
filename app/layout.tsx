@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
-import VerificationBanner from "@/components/ui/VerificationBanner";
 
 export const metadata: Metadata = {
   title: "Mesa — Restaurant Reservations",
@@ -12,10 +11,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <ToastProvider>
-          <VerificationBanner />
-          {children}
-        </ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
