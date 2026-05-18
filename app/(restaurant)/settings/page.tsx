@@ -29,6 +29,12 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const [reservationTimes, setReservationTimes] = useState<string[]>([]);
+  const [newTime, setNewTime] = useState("");
+  const [timesSaving, setTimesSaving] = useState(false);
+  const [timesError, setTimesError] = useState("");
+  const [timesSuccess, setTimesSuccess] = useState(false);
+
   useEffect(() => {
     if (!_hasHydrated) return;
     if (!user || !can("SETTINGS_READ")) {
@@ -48,6 +54,9 @@ export default function SettingsPage() {
           smtpUser: data.smtpUser || "",
         }));
         if (data.smtpConfigured) setMode("custom-smtp");
+        if (data.reservationTimes?.length) {
+          setReservationTimes([...data.reservationTimes].sort());
+        }
       })
       .finally(() => setLoading(false));
   }, [user, _hasHydrated]);
@@ -92,6 +101,34 @@ export default function SettingsPage() {
       setError(typeof msg === "string" ? msg : "Failed to save");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function addTime() {
+    if (!newTime) return;
+    if (reservationTimes.includes(newTime)) { setNewTime(""); return; }
+    setReservationTimes((prev) => [...prev, newTime].sort());
+    setNewTime("");
+  }
+
+  function removeTime(t: string) {
+    setReservationTimes((prev) => prev.filter((x) => x !== t));
+  }
+
+  async function handleSaveTimes() {
+    setTimesSaving(true);
+    setTimesError("");
+    setTimesSuccess(false);
+    try {
+      const { data } = await api.put("/restaurants/me", { reservationTimes: reservationTimes.length ? reservationTimes : null });
+      setRestaurant((r) => (r ? { ...r, ...data } : r));
+      setTimesSuccess(true);
+      setTimeout(() => setTimesSuccess(false), 3000);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setTimesError(typeof msg === "string" ? msg : "Failed to save");
+    } finally {
+      setTimesSaving(false);
     }
   }
 
@@ -589,6 +626,77 @@ export default function SettingsPage() {
             </h2>
             <ChangePasswordForm />
           </div>
+        </div>
+
+        {/* Reservation times */}
+        <div className="anim-3 card" style={{ opacity: 0, padding: "1.75rem", marginTop: "1.5rem" }}>
+          <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "0.375rem" }}>
+            Reservation times
+          </h2>
+          <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginBottom: "1.25rem", lineHeight: 1.5 }}>
+            Define the specific times guests can book. If none are set, all 30-minute slots between open and close time are available.
+          </p>
+
+          {timesError && (
+            <div style={{ padding: "0.75rem 1rem", background: "#fef2f2", border: "1px solid rgba(220,38,38,0.2)", borderRadius: "8px", color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>
+              {timesError}
+            </div>
+          )}
+          {timesSuccess && (
+            <div style={{ padding: "0.75rem 1rem", background: "#f0fdf4", border: "1px solid rgba(22,163,74,0.2)", borderRadius: "8px", color: "#16a34a", fontSize: "0.875rem", marginBottom: "1rem" }}>
+              Times saved.
+            </div>
+          )}
+
+          {reservationTimes.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1rem" }}>
+              {reservationTimes.map((t) => (
+                <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#fef2ec", border: "1px solid rgba(196,65,12,0.2)", borderRadius: "999px", padding: "0.25rem 0.75rem", fontSize: "0.875rem", color: "#c4410c", fontWeight: 600 }}>
+                  {t}
+                  <button
+                    onClick={() => removeTime(t)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#c4410c", fontSize: "1rem", lineHeight: 1, padding: 0, display: "flex", alignItems: "center" }}
+                    aria-label={`Remove ${t}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {reservationTimes.length === 0 && (
+            <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginBottom: "1rem", fontStyle: "italic" }}>
+              No custom times set — using open/close slot generation.
+            </p>
+          )}
+
+          <div style={{ display: "flex", gap: "0.625rem", marginBottom: "1.25rem" }}>
+            <input
+              type="time"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addTime()}
+              className="input"
+              style={{ width: "140px", colorScheme: "light" }}
+            />
+            <button
+              onClick={addTime}
+              disabled={!newTime}
+              className="btn btn-outline btn-md"
+              style={{ opacity: newTime ? 1 : 0.5 }}
+            >
+              Add time
+            </button>
+          </div>
+
+          <button
+            onClick={handleSaveTimes}
+            disabled={timesSaving}
+            className="btn btn-primary btn-md"
+          >
+            {timesSaving ? "Saving…" : "Save times"}
+          </button>
         </div>
       </div>
     </div>

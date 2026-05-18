@@ -32,6 +32,7 @@ interface Props {
   onCreated: () => void;
   restaurantOpenTime?: string;
   restaurantCloseTime?: string;
+  restaurantReservationTimes?: string[] | null;
 }
 
 export function ManualBookingModal({
@@ -39,6 +40,7 @@ export function ManualBookingModal({
   onCreated,
   restaurantOpenTime,
   restaurantCloseTime,
+  restaurantReservationTimes,
 }: Props) {
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState("");
@@ -410,14 +412,27 @@ export function ManualBookingModal({
                 <label style={labelStyle}>
                   Arrival time <span style={{ color: "#c4410c" }}>*</span>
                 </label>
-                <input
-                  type="time"
-                  value={startTime}
-                  min={restaurantOpenTime}
-                  max={restaurantCloseTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="input"
-                />
+                {restaurantReservationTimes?.length ? (
+                  <select
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">--:--</option>
+                    {restaurantReservationTimes.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="time"
+                    value={startTime}
+                    min={restaurantOpenTime}
+                    max={restaurantCloseTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="input"
+                  />
+                )}
               </div>
               <div>
                 <label style={labelStyle}>Party size</label>

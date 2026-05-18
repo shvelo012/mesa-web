@@ -43,6 +43,7 @@ export interface Restaurant {
   cuisine?: string;
   openTime: string;
   closeTime: string;
+  reservationTimes?: string[] | null;
   ownerId: string;
   floors?: Floor[];
   avgStars?: number | null;

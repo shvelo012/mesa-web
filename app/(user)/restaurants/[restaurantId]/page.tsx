@@ -1092,9 +1092,9 @@ export default function RestaurantDetailPage() {
                   className="input"
                 >
                   <option value="">--:--</option>
-                  {halfHourSlots(
-                    restaurant.openTime,
-                    restaurant.closeTime,
+                  {(restaurant.reservationTimes?.length
+                    ? restaurant.reservationTimes
+                    : halfHourSlots(restaurant.openTime, restaurant.closeTime)
                   ).map((t) => (
                     <option key={t} value={t}>
                       {t}

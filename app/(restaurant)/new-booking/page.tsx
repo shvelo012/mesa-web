@@ -255,7 +255,9 @@ export default function NewBookingPage() {
   }
 
   const slots = restaurant
-    ? halfHourSlots(restaurant.openTime, restaurant.closeTime)
+    ? (restaurant.reservationTimes?.length
+        ? restaurant.reservationTimes
+        : halfHourSlots(restaurant.openTime, restaurant.closeTime))
     : [];
 
   if (loading) {
