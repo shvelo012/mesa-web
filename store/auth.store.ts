@@ -20,6 +20,8 @@ interface AuthState {
   logout: () => void;
   can: (permission: Permission) => boolean;
   loadPermissions: () => Promise<void>;
+  markEmailVerified: () => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -71,6 +73,14 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // silently fail — permissions stay empty
         }
+      },
+
+      markEmailVerified: () => {
+        set((s) => s.user ? { user: { ...s.user, emailVerified: true } } : {});
+      },
+
+      changePassword: async (currentPassword, newPassword) => {
+        await api.put("/auth/password", { currentPassword, newPassword });
       },
     }),
     {

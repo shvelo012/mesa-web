@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import { Restaurant } from "@/types";
+import ChangePasswordForm from "@/components/ui/ChangePasswordForm";
 
 type Mode = "reply-to" | "custom-smtp";
 
@@ -580,6 +581,13 @@ export default function SettingsPage() {
                 {saving ? "Saving…" : "Save settings"}
               </button>
             </form>
+          </div>
+
+          <div className="card" style={{ padding: "1.75rem", marginTop: "1.25rem" }}>
+            <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>
+              Change password
+            </h2>
+            <ChangePasswordForm />
           </div>
         </div>
       </div>

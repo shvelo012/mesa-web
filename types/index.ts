@@ -24,6 +24,7 @@ export interface User {
   name: string;
   phone?: string;
   role: Role;
+  emailVerified: boolean;
 }
 
 export interface Restaurant {

@@ -25,7 +25,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(form);
-      router.push(form.role === "RESTAURANT_OWNER" ? "/dashboard" : "/restaurants");
+      router.push("/verify-email/pending");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(msg || "Registration failed");
