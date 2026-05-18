@@ -34,7 +34,6 @@ type ReportData = {
     id: string;
     date: string;
     startTime: string;
-    endTime: string;
     partySize: number;
     status: string;
     guestName: string;
@@ -172,7 +171,7 @@ export default function ReportsPage() {
                         <span className="badge" style={{ background: st.bg, color: st.color, fontSize: "0.6875rem" }}>{st.label}</span>
                       </div>
                       <span style={{ fontSize: "0.8125rem", color: "#5c5248" }}>
-                        {r.startTime} – {r.endTime} · Table {r.tableLabel ?? "—"} · {r.partySize}p
+                        {r.startTime} · Table {r.tableLabel ?? "—"} · {r.partySize}p
                       </span>
                       <span style={{ fontSize: "0.75rem", color: "#9a9088" }}>{r.guestName}</span>
                     </div>

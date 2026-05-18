@@ -89,7 +89,7 @@ export default function NewBookingPage() {
   const [selectedTable, setSelectedTable] = useState<TableItem | null>(null);
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set());
   const [tableBookings, setTableBookings] = useState<
-    Record<string, { startTime: string; endTime: string }[]>
+    Record<string, { startTime: string }[]>
   >({});
   const [availLoading, setAvailLoading] = useState(false);
   const [availFetched, setAvailFetched] = useState(false);
@@ -97,7 +97,6 @@ export default function NewBookingPage() {
   // Booking form
   const [date, setDate] = useState(TODAY);
   const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
   const [partySize, setPartySize] = useState(2);
   const [partySizeRaw, setPartySizeRaw] = useState("2");
   const [guestName, setGuestName] = useState("");
@@ -148,9 +147,9 @@ export default function NewBookingPage() {
   // Fetch availability whenever date is set (bookings shown)
   // and re-fetch when time window is complete (occupied tables marked)
   const fetchAvailability = useCallback(
-    async (d: string, st?: string, et?: string) => {
+    async (d: string, st?: string) => {
       if (!d) return;
-      const key = st && et ? `${d}|${st}|${et}` : `${d}`;
+      const key = st ? `${d}|${st}` : `${d}`;
       if (prevAvailKey.current === key) return;
       prevAvailKey.current = key;
 
@@ -158,20 +157,19 @@ export default function NewBookingPage() {
       try {
         const params = new URLSearchParams({ date: d });
         if (st) params.set("startTime", st);
-        if (et) params.set("endTime", et);
         const { data } = await api.get<{
           floors: {
             tables: {
               id: string;
               available: boolean;
-              bookings: { startTime: string; endTime: string }[];
+              bookings: { startTime: string }[];
             }[];
           }[];
         }>(`/reservations/availability?${params}`);
         const booked = new Set<string>();
         const bookingsMap: Record<
           string,
-          { startTime: string; endTime: string }[]
+          { startTime: string }[]
         > = {};
         for (const fl of data.floors) {
           for (const t of fl.tables) {
@@ -195,18 +193,14 @@ export default function NewBookingPage() {
 
   useEffect(() => {
     if (date) {
-      if (startTime && endTime && startTime < endTime) {
-        fetchAvailability(date, startTime, endTime);
-      } else {
-        fetchAvailability(date);
-      }
+      fetchAvailability(date, startTime);
     } else {
       setOccupiedIds(new Set());
       setTableBookings({});
       setAvailFetched(false);
       prevAvailKey.current = "";
     }
-  }, [date, startTime, endTime, fetchAvailability]);
+  }, [date, startTime, fetchAvailability]);
 
   // Build display floor: overlay occupancy onto isActive
   const rawFloor = selectedFloorId ? floorsData[selectedFloorId] : null;
@@ -220,7 +214,7 @@ export default function NewBookingPage() {
       }
     : null;
 
-  const timeReady = !!(date && startTime && endTime && startTime < endTime);
+  const timeReady = !!(date && startTime);
 
   async function handleSubmit() {
     setError("");
@@ -228,12 +222,8 @@ export default function NewBookingPage() {
       setError("Select a table on the floor plan");
       return;
     }
-    if (!date || !startTime || !endTime) {
-      setError("Date and times are required");
-      return;
-    }
-    if (startTime >= endTime) {
-      setError("End time must be after start time");
+    if (!date || !startTime) {
+      setError("Date and arrival time are required");
       return;
     }
     if (!guestName.trim()) {
@@ -247,7 +237,6 @@ export default function NewBookingPage() {
         tableId: selectedTable.id,
         date,
         startTime,
-        endTime,
         partySize,
         guestName: guestName.trim(),
         guestPhone: guestPhone.trim() || undefined,
@@ -530,9 +519,9 @@ export default function NewBookingPage() {
                       ? availLoading
                         ? "Checking availability…"
                         : availFetched
-                          ? `Select an available table for ${date} · ${startTime} – ${endTime}`
+                          ? `Select an available table for ${date} · ${startTime}`
                           : "Click a table to select it"
-                      : "Set date and times to see live availability"}
+                      : "Set date and arrival time to see live availability"}
                   </span>
                 </div>
                 {availLoading && (
@@ -747,52 +736,24 @@ export default function NewBookingPage() {
                     />
                   </div>
 
-                  {/* Times */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "0.625rem",
-                    }}
-                  >
-                    <div>
-                      <label className="label">Arrival</label>
-                      <select
-                        value={startTime}
-                        onChange={(e) => {
-                          setStartTime(e.target.value);
-                          setSelectedTable(null);
-                        }}
-                        className="input"
-                      >
-                        <option value="">--:--</option>
-                        {slots.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="label">Departure</label>
-                      <select
-                        value={endTime}
-                        onChange={(e) => {
-                          setEndTime(e.target.value);
-                          setSelectedTable(null);
-                        }}
-                        className="input"
-                      >
-                        <option value="">--:--</option>
-                        {slots
-                          .filter((t) => !startTime || t > startTime)
-                          .map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+                  {/* Arrival time */}
+                  <div>
+                    <label className="label">Arrival</label>
+                    <select
+                      value={startTime}
+                      onChange={(e) => {
+                        setStartTime(e.target.value);
+                        setSelectedTable(null);
+                      }}
+                      className="input"
+                    >
+                      <option value="">--:--</option>
+                      {slots.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Party size */}

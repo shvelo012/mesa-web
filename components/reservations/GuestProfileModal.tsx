@@ -7,7 +7,6 @@ type GuestReservation = {
   id: string;
   date: string;
   startTime: string;
-  endTime: string;
   partySize: number;
   status: string;
   table?: { label: string };
@@ -137,7 +136,7 @@ export default function GuestProfileModal({ guestEmail, guestName, onClose }: Pr
                         <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.75rem", background: "#fafaf8", borderRadius: "8px", gap: "0.5rem" }}>
                           <div style={{ minWidth: 0 }}>
                             <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "#18160f", margin: 0 }}>
-                              {r.date} · {r.startTime}–{r.endTime}
+                              {r.date} · {r.startTime}
                             </p>
                             <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: 0 }}>
                               {r.partySize} guests{r.table ? ` · Table ${r.table.label}` : ""}

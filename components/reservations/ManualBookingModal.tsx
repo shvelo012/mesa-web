@@ -55,7 +55,6 @@ export function ManualBookingModal({
   const [partySize, setPartySize] = useState(2);
   const [partySizeRaw, setPartySizeRaw] = useState("2");
   const [startTime, setStartTime] = useState(restaurantOpenTime || "");
-  const [endTime, setEndTime] = useState("");
 
   // Step 3: Table
   const [floors, setFloors] = useState<FloorData[]>([]);
@@ -69,7 +68,7 @@ export function ManualBookingModal({
     setAvailLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ date, startTime, endTime });
+      const params = new URLSearchParams({ date, startTime });
       const { data } = await api.get<{ floors: FloorData[] }>(
         `/reservations/availability?${params}`,
       );
@@ -97,12 +96,8 @@ export function ManualBookingModal({
       setError("Date is required");
       return;
     }
-    if (!startTime || !endTime) {
-      setError("Start and end times are required");
-      return;
-    }
-    if (startTime >= endTime) {
-      setError("End time must be after start time");
+    if (!startTime) {
+      setError("Arrival time is required");
       return;
     }
     setSelectedTableId(null);
@@ -119,7 +114,6 @@ export function ManualBookingModal({
         tableId: selectedTableId,
         date,
         startTime,
-        endTime,
         partySize,
         notes: notes.trim() || undefined,
         guestName: guestName.trim(),
@@ -412,39 +406,18 @@ export function ManualBookingModal({
                   className="input"
                 />
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "0.75rem",
-                }}
-              >
-                <div>
-                  <label style={labelStyle}>
-                    Start time <span style={{ color: "#c4410c" }}>*</span>
-                  </label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    min={restaurantOpenTime}
-                    max={restaurantCloseTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>
-                    End time <span style={{ color: "#c4410c" }}>*</span>
-                  </label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    min={startTime || restaurantOpenTime}
-                    max={restaurantCloseTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="input"
-                  />
-                </div>
+              <div>
+                <label style={labelStyle}>
+                  Arrival time <span style={{ color: "#c4410c" }}>*</span>
+                </label>
+                <input
+                  type="time"
+                  value={startTime}
+                  min={restaurantOpenTime}
+                  max={restaurantCloseTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="input"
+                />
               </div>
               <div>
                 <label style={labelStyle}>Party size</label>
@@ -583,9 +556,7 @@ export function ManualBookingModal({
                     <span>·</span>
                     <span>{date}</span>
                     <span>·</span>
-                    <span>
-                      {startTime} – {endTime}
-                    </span>
+                    <span>{startTime}</span>
                     <span>·</span>
                     <span>
                       {partySize} guest{partySize > 1 ? "s" : ""}

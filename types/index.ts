@@ -144,7 +144,6 @@ export interface Reservation {
   confirmationToken?: string;
   date: string;
   startTime: string;
-  endTime: string;
   partySize: number;
   status: ReservationStatus;
   notes?: string;

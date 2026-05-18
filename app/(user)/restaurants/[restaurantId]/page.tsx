@@ -24,11 +24,6 @@ function addMins(time: string, mins: number): string {
   return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
 }
 
-function timeDiffMins(start: string, end: string): number {
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  return eh * 60 + em - (sh * 60 + sm);
-}
 
 function halfHourSlots(open: string, close: string): string[] {
   const slots: string[] = [];
@@ -102,7 +97,6 @@ export default function RestaurantDetailPage() {
   const [booking, setBooking] = useState({
     date: "",
     startTime: "",
-    endTime: "",
     partySize: 2,
     notes: "",
   });
@@ -134,7 +128,7 @@ export default function RestaurantDetailPage() {
 
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set());
   const [tableBookings, setTableBookings] = useState<
-    Record<string, { startTime: string; endTime: string }[]>
+    Record<string, { startTime: string }[]>
   >({});
   const [availLoading, setAvailLoading] = useState(false);
   const [availFetched, setAvailFetched] = useState(false);
@@ -201,9 +195,9 @@ export default function RestaurantDetailPage() {
   }
 
   const fetchAvailability = useCallback(
-    async (d: string, st?: string, et?: string) => {
+    async (d: string, st?: string) => {
       if (!d) return;
-      const key = st && et ? `${d}|${st}|${et}` : `${d}`;
+      const key = st ? `${d}|${st}` : `${d}`;
       if (prevAvailKey.current === key) return;
       prevAvailKey.current = key;
 
@@ -211,21 +205,17 @@ export default function RestaurantDetailPage() {
       try {
         const params = new URLSearchParams({ date: d });
         if (st) params.set("startTime", st);
-        if (et) params.set("endTime", et);
         const { data } = await api.get<{
           floors: {
             tables: {
               id: string;
               available: boolean;
-              bookings: { startTime: string; endTime: string }[];
+              bookings: { startTime: string }[];
             }[];
           }[];
         }>(`/restaurants/${restaurantId}/availability?${params}`);
         const booked = new Set<string>();
-        const bookingsMap: Record<
-          string,
-          { startTime: string; endTime: string }[]
-        > = {};
+        const bookingsMap: Record<string, { startTime: string }[]> = {};
         for (const fl of data.floors) {
           for (const t of fl.tables) {
             if (!t.available) booked.add(t.id);
@@ -246,24 +236,20 @@ export default function RestaurantDetailPage() {
   );
 
   const fetchNearbySlots = useCallback(
-    async (d: string, st: string, et: string) => {
-      if (!d || !st || !et) return;
-      const dur = timeDiffMins(st, et);
+    async (d: string, st: string) => {
+      if (!d || !st) return;
       const alternatives = [-90, -60, 60, 90]
-        .map((offset) => ({
-          time: addMins(st, offset),
-          end: addMins(et, offset),
-        }))
-        .filter(({ time }) => time >= "06:00" && time <= "23:30");
+        .map((offset) => addMins(st, offset))
+        .filter((time) => time >= "06:00" && time <= "23:30");
       if (!alternatives.length) return;
       setNearbyLoading(true);
       try {
         const results = await Promise.allSettled(
-          alternatives.map(({ time, end }) =>
+          alternatives.map((time) =>
             api
               .get<{
                 floors: { tables: { available: boolean }[] }[];
-              }>(`/restaurants/${restaurantId}/availability?date=${d}&startTime=${time}&endTime=${end}`)
+              }>(`/restaurants/${restaurantId}/availability?date=${d}&startTime=${time}`)
               .then(({ data }) => ({
                 time,
                 hasAvailable: data.floors.some((f) =>
@@ -288,7 +274,6 @@ export default function RestaurantDetailPage() {
       } finally {
         setNearbyLoading(false);
       }
-      void dur;
     },
     [restaurantId],
   );
@@ -296,22 +281,14 @@ export default function RestaurantDetailPage() {
   useEffect(() => {
     setNearbySlots([]);
     if (booking.date) {
-      if (
-        booking.startTime &&
-        booking.endTime &&
-        booking.startTime < booking.endTime
-      ) {
-        fetchAvailability(booking.date, booking.startTime, booking.endTime);
-      } else {
-        fetchAvailability(booking.date);
-      }
+      fetchAvailability(booking.date, booking.startTime || undefined);
     } else {
       setOccupiedIds(new Set());
       setTableBookings({});
       setAvailFetched(false);
       prevAvailKey.current = "";
     }
-  }, [booking.date, booking.startTime, booking.endTime, fetchAvailability]);
+  }, [booking.date, booking.startTime, fetchAvailability]);
 
   // When fully booked, fetch nearby alternatives
   useEffect(() => {
@@ -320,10 +297,9 @@ export default function RestaurantDetailPage() {
       occupiedIds.size > 0 &&
       !selectedTable &&
       booking.date &&
-      booking.startTime &&
-      booking.endTime
+      booking.startTime
     ) {
-      fetchNearbySlots(booking.date, booking.startTime, booking.endTime);
+      fetchNearbySlots(booking.date, booking.startTime);
     }
   }, [
     availFetched,
@@ -331,7 +307,6 @@ export default function RestaurantDetailPage() {
     selectedTable,
     booking.date,
     booking.startTime,
-    booking.endTime,
     fetchNearbySlots,
   ]);
 
@@ -350,10 +325,6 @@ export default function RestaurantDetailPage() {
     }
     if (!booking.startTime) {
       setBookingErr("Please set arrival time");
-      return;
-    }
-    if (booking.endTime && booking.startTime >= booking.endTime) {
-      setBookingErr("Departure must be after arrival");
       return;
     }
     if (booking.partySize > selectedTable.capacity) {
@@ -801,13 +772,13 @@ export default function RestaurantDetailPage() {
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
                   <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>
-                    {booking.startTime && booking.endTime
+                    {booking.startTime
                       ? availLoading
                         ? "Checking availability…"
                         : availFetched
-                          ? `Select an available table for ${booking.date} · ${booking.startTime} – ${booking.endTime}`
-                          : "Set date and times to see live availability"
-                      : "Set date and times to see live availability"}
+                          ? `Select an available table for ${booking.date} · ${booking.startTime}`
+                          : "Click a table to select it"
+                      : "Set date and arrival time to see live availability"}
                   </span>
                 </div>
                 {availLoading && (
@@ -854,11 +825,7 @@ export default function RestaurantDetailPage() {
 
             {/* Step indicator */}
             {(() => {
-              const step1 = !!(
-                booking.date &&
-                booking.startTime &&
-                booking.endTime
-              );
+              const step1 = !!(booking.date && booking.startTime);
               const step2 = !!selectedTable;
               const step3 = !!(user
                 ? userContact.name && userContact.email
@@ -1115,53 +1082,25 @@ export default function RestaurantDetailPage() {
                   style={{ colorScheme: "light" }}
                 />
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "0.625rem",
-                }}
-              >
-                <div>
-                  <label className="label">Arrival</label>
-                  <select
-                    value={booking.startTime}
-                    onChange={(e) =>
-                      setBooking((b) => ({ ...b, startTime: e.target.value }))
-                    }
-                    className="input"
-                  >
-                    <option value="">--:--</option>
-                    {halfHourSlots(
-                      restaurant.openTime,
-                      restaurant.closeTime,
-                    ).map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Departure</label>
-                  <select
-                    value={booking.endTime}
-                    onChange={(e) =>
-                      setBooking((b) => ({ ...b, endTime: e.target.value }))
-                    }
-                    className="input"
-                  >
-                    <option value="">--:--</option>
-                    {halfHourSlots(
-                      restaurant.openTime,
-                      restaurant.closeTime,
-                    ).map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="label">Arrival</label>
+                <select
+                  value={booking.startTime}
+                  onChange={(e) =>
+                    setBooking((b) => ({ ...b, startTime: e.target.value }))
+                  }
+                  className="input"
+                >
+                  <option value="">--:--</option>
+                  {halfHourSlots(
+                    restaurant.openTime,
+                    restaurant.closeTime,
+                  ).map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="label">Guests</label>
@@ -1456,10 +1395,6 @@ export default function RestaurantDetailPage() {
                         {nearbySlots
                           .filter((s) => s.hasAvailable)
                           .map((slot) => {
-                            const dur = timeDiffMins(
-                              booking.startTime,
-                              booking.endTime,
-                            );
                             return (
                               <button
                                 key={slot.time}
@@ -1467,10 +1402,6 @@ export default function RestaurantDetailPage() {
                                   setBooking((b) => ({
                                     ...b,
                                     startTime: slot.time,
-                                    endTime: addMins(
-                                      slot.time,
-                                      dur > 0 ? dur : 90,
-                                    ),
                                   }));
                                   setNearbySlots([]);
                                 }}
@@ -1505,7 +1436,6 @@ export default function RestaurantDetailPage() {
               {/* Waitlist section — show when time is set, availability fetched, and all tables are occupied */}
               {availFetched &&
                 booking.startTime &&
-                booking.endTime &&
                 occupiedIds.size > 0 &&
                 !selectedTable &&
                 !bookingMsg && (

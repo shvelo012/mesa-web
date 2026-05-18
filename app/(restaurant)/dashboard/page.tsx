@@ -25,7 +25,6 @@ type ResDashItem = {
   id: string;
   date: string;
   startTime: string;
-  endTime: string;
   status: string;
   partySize: number;
   guestName?: string;
@@ -101,9 +100,9 @@ export default function DashboardPage() {
   const todayConfirmed = allReservations
     .filter((r) => r.date === today && ["CONFIRMED", "SEATED"].includes(r.status))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  const nowSeated = todayConfirmed.filter((r) => r.startTime <= now && r.endTime >= now);
+  const nowSeated = todayConfirmed.filter((r) => r.startTime <= now);
   const arriving = todayConfirmed.filter((r) => r.startTime > now);
-  const leavingSoon = nowSeated.filter((r) => r.endTime <= addMins(now, 45));
+  const leavingSoon: ResDashItem[] = [];
 
   // Derived: peak hours heatmap
   const hourCounts = peakHourCounts(allReservations);
@@ -626,11 +625,6 @@ export default function DashboardPage() {
   );
 }
 
-function addMins(time: string, mins: number): string {
-  const [h, m] = time.split(":").map(Number);
-  const total = h * 60 + m + mins;
-  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-}
 
 function TimelineCard({ r, highlight }: { r: ResDashItem; highlight: "current" | "upcoming" | "leaving" }) {
   const name = r.user?.name || r.guestName || "Guest";
@@ -651,7 +645,7 @@ function TimelineCard({ r, highlight }: { r: ResDashItem; highlight: "current" |
         <span style={{ fontSize: "0.75rem", color: "#9a9088", flexShrink: 0 }}>{r.partySize}p</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.1rem" }}>
-        <span style={{ fontSize: "0.75rem", color: "#5c5248" }}>{r.startTime}–{r.endTime}</span>
+        <span style={{ fontSize: "0.75rem", color: "#5c5248" }}>{r.startTime}</span>
         {r.table && <span style={{ fontSize: "0.7rem", color: "#9a9088" }}>T{r.table.label}</span>}
         {highlight === "leaving" && <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.05rem 0.3rem", borderRadius: "999px" }}>leaving soon</span>}
       </div>

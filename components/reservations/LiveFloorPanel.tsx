@@ -8,7 +8,7 @@ type TableLive = {
   label: string;
   capacity: number;
   status: "AVAILABLE" | "ARRIVING_SOON" | "OCCUPIED" | "UPCOMING";
-  reservation?: { id: string; startTime: string; endTime: string; guestName: string | null; partySize: number };
+  reservation?: { id: string; startTime: string; guestName: string | null; partySize: number };
 };
 
 type FloorLive = {
@@ -88,7 +88,7 @@ export default function LiveFloorPanel({ date, onTableClick }: Props) {
                     key={t.id}
                     onClick={() => onTableClick?.(t.id)}
                     title={t.reservation
-                      ? `${t.reservation.guestName || "Guest"} · ${t.reservation.startTime}–${t.reservation.endTime} · ${t.reservation.partySize}p`
+                      ? `${t.reservation.guestName || "Guest"} · ${t.reservation.startTime} · ${t.reservation.partySize}p`
                       : `Table ${t.label} · ${t.capacity} seats`
                     }
                     style={{

@@ -10,7 +10,6 @@ type ConfirmationData = {
   confirmationToken: string;
   date: string;
   startTime: string;
-  endTime: string;
   partySize: number;
   status: string;
   notes?: string;
@@ -35,7 +34,7 @@ const STATUS_UI: Record<string, { label: string; bg: string; color: string; icon
 function buildCalendarUrl(r: ConfirmationData): string {
   const [y, mo, d] = r.date.split("-");
   const [sh, sm] = r.startTime.split(":");
-  const [eh, em] = r.endTime ? r.endTime.split(":") : [String(+sh + 2), "00"];
+  const [eh, em] = [String(+sh + 2), "00"];
   const start = `${y}${mo}${d}T${sh}${sm}00`;
   const end = `${y}${mo}${d}T${eh}${em}00`;
   const title = encodeURIComponent(`Reservation at ${r.restaurantName || "Restaurant"}`);
@@ -47,7 +46,7 @@ function buildCalendarUrl(r: ConfirmationData): string {
 function buildIcs(r: ConfirmationData): string {
   const [y, mo, d] = r.date.split("-");
   const [sh, sm] = r.startTime.split(":");
-  const [eh, em] = r.endTime ? r.endTime.split(":") : [String(+sh + 2), "00"];
+  const [eh, em] = [String(+sh + 2), "00"];
   const dtStart = `${y}${mo}${d}T${sh}${sm}00`;
   const dtEnd = `${y}${mo}${d}T${eh}${em}00`;
   return [
@@ -221,7 +220,7 @@ export default function ReservationConfirmationPage() {
                 </div>
                 <div>
                   <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Time</p>
-                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{data.startTime} – {data.endTime}</p>
+                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{data.startTime}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Party size</p>

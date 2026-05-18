@@ -108,7 +108,7 @@ export default function MyReservationsPage() {
                         {fmt(r.date)}
                       </p>
                       <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginTop: "0.15rem" }}>
-                        {r.startTime} – {r.endTime} · Table {r.table?.label} · {r.partySize} guests
+                        {r.startTime} · Table {r.table?.label} · {r.partySize} guests
                       </p>
                       {r.notes && <p style={{ fontSize: "0.8125rem", color: "#5c5248", marginTop: "0.15rem", fontStyle: "italic" }}>{r.notes}</p>}
                     </div>

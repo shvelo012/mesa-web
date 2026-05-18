@@ -29,7 +29,6 @@ type ReservationItem = {
   id: string;
   date: string;
   startTime: string;
-  endTime: string;
   partySize: number;
   status: string;
   notes?: string;
@@ -57,10 +56,6 @@ type WaitlistItem = {
 type Tab = "PENDING" | "CONFIRMED" | "ALL" | "PAST" | "WAITLIST";
 type ViewMode = "list" | "timeline" | "kanban";
 
-function timeRangesOverlap(s1: string, e1: string, s2: string, e2: string) {
-  return s1 <= e2 && e1 >= s2;
-}
-
 function getOverlappingPending(reservations: ReservationItem[], target: ReservationItem) {
   if (target.status !== "PENDING") return [];
   return reservations.filter(
@@ -69,7 +64,7 @@ function getOverlappingPending(reservations: ReservationItem[], target: Reservat
       (r.status === "PENDING" || r.status === "CONFIRMED") &&
       r.tableId === target.tableId &&
       r.date === target.date &&
-      timeRangesOverlap(r.startTime, r.endTime, target.startTime, target.endTime),
+      r.startTime === target.startTime,
   );
 }
 
@@ -670,7 +665,7 @@ function ReservationsPageInner() {
                       {/* Date & Time */}
                       <div>
                         <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "#18160f", margin: 0 }}>{r.date}</p>
-                        <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: 0 }}>{r.startTime} – {r.endTime}</p>
+                        <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: 0 }}>{r.startTime}</p>
                       </div>
 
                       {/* Table */}
@@ -817,7 +812,7 @@ function ReservationsPageInner() {
                           {itemName}
                           {isTarget && <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "#dc2626", background: "#fef2f2", padding: "0.1rem 0.4rem", borderRadius: "999px", marginLeft: "0.25rem" }}>This request</span>}
                         </p>
-                        <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: "0.1rem 0 0" }}>{item.startTime} – {item.endTime} · {item.partySize} guests</p>
+                        <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: "0.1rem 0 0" }}>{item.startTime} · {item.partySize} guests</p>
                       </div>
                       <span className="badge" style={{ background: STATUS_STYLE[item.status]?.bg || "#f0ede8", color: STATUS_STYLE[item.status]?.color || "#5c5248" }}>
                         {STATUS_STYLE[item.status]?.label || item.status}

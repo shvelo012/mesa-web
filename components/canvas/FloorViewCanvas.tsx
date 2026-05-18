@@ -11,7 +11,7 @@ interface Props {
   selectedTableId: string | null;
   onSelectTable: (table: TableItem) => void;
   partySize?: number;
-  tableBookings?: Record<string, { startTime: string; endTime: string }[]>;
+  tableBookings?: Record<string, { startTime: string }[]>;
   occupiedIds?: Set<string>;
 }
 
@@ -255,7 +255,7 @@ export default function FloorViewCanvas({
                   </span>
                   {bookings.map((b, i) => (
                     <span key={i}>
-                      {b.startTime} – {b.endTime}
+                      {b.startTime}
                     </span>
                   ))}
                 </div>

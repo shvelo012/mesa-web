@@ -12,7 +12,6 @@ type Reservation = {
   id: string;
   date: string;
   startTime: string;
-  endTime: string;
   partySize: number;
   status: string;
   guestName?: string;
@@ -99,7 +98,9 @@ export default function TimelineView({ reservations, date, openTime, closeTime, 
         </div>
 
         {/* Table rows */}
-        {tables.map(([tableId, { label, reservations: tableResv }]) => (
+        {tables.map(([tableId, { label, reservations: tableResv }]) => {
+          const sorted = [...tableResv].sort((a, b) => a.startTime.localeCompare(b.startTime));
+          return (
           <div key={tableId} style={{ display: "flex", alignItems: "center", marginBottom: "6px", gap: "8px" }}>
             <div style={{ width: "82px", flexShrink: 0, fontSize: "0.75rem", fontWeight: 600, color: "#5c5248", textAlign: "right", paddingRight: "8px" }}>
               T{label}
@@ -108,17 +109,17 @@ export default function TimelineView({ reservations, date, openTime, closeTime, 
               {nowPct !== null && (
                 <div style={{ position: "absolute", top: 0, bottom: 0, left: `${nowPct}%`, width: "1.5px", background: "#c4410c", zIndex: 10, opacity: 0.7 }} />
               )}
-              {tableResv.map((r) => {
+              {sorted.map((r, idx) => {
                 const start = timeToMinutes(r.startTime);
-                const end = timeToMinutes(r.endTime);
+                const effectiveEnd = idx + 1 < sorted.length ? timeToMinutes(sorted[idx + 1].startTime) : close;
                 const leftPct = ((start - open) / totalMins) * 100;
-                const widthPct = ((end - start) / totalMins) * 100;
+                const widthPct = ((effectiveEnd - start) / totalMins) * 100;
                 const cs = STATUS_COLOR[r.status] || STATUS_COLOR.PENDING;
                 const name = r.user?.name || r.guestName || "Guest";
                 return (
                   <div
                     key={r.id}
-                    title={`${name} · ${r.startTime}–${r.endTime} · ${r.partySize}p`}
+                    title={`${name} · ${r.startTime} · ${r.partySize}p`}
                     style={{
                       position: "absolute",
                       top: "3px",
@@ -142,7 +143,8 @@ export default function TimelineView({ reservations, date, openTime, closeTime, 
               })}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

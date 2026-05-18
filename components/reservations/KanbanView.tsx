@@ -1,7 +1,7 @@
 "use client";
 
-function timesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string) {
-  return aStart < bEnd && aEnd > bStart;
+function sameSlot(a: ReservationItem, b: ReservationItem) {
+  return a.tableId && a.tableId === b.tableId && a.date === b.date && a.startTime === b.startTime;
 }
 
 function getConfirmedConflictIds(reservations: ReservationItem[]): Set<string> {
@@ -9,9 +9,7 @@ function getConfirmedConflictIds(reservations: ReservationItem[]): Set<string> {
   const ids = new Set<string>();
   for (const p of reservations.filter((r) => r.status === "PENDING")) {
     for (const c of confirmed) {
-      if (p.tableId && p.tableId === c.tableId && p.date === c.date && timesOverlap(p.startTime, p.endTime, c.startTime, c.endTime)) {
-        ids.add(p.id);
-      }
+      if (sameSlot(p, c)) ids.add(p.id);
     }
   }
   return ids;
@@ -23,10 +21,7 @@ function getConflictIds(reservations: ReservationItem[]): Set<string> {
   for (let i = 0; i < active.length; i++) {
     for (let j = i + 1; j < active.length; j++) {
       const a = active[i], b = active[j];
-      if (a.tableId && a.tableId === b.tableId && a.date === b.date && timesOverlap(a.startTime, a.endTime, b.startTime, b.endTime)) {
-        ids.add(a.id);
-        ids.add(b.id);
-      }
+      if (sameSlot(a, b)) { ids.add(a.id); ids.add(b.id); }
     }
   }
   return ids;
@@ -36,7 +31,6 @@ type ReservationItem = {
   id: string;
   date: string;
   startTime: string;
-  endTime: string;
   partySize: number;
   status: string;
   notes?: string;
@@ -148,7 +142,7 @@ export default function KanbanView({ reservations, onStatusChange, actionLoading
                         {r.date}
                       </span>
                       <span style={{ fontSize: "0.75rem", color: "#5c5248", background: "#f5f3ef", padding: "0.15rem 0.5rem", borderRadius: "4px" }}>
-                        {r.startTime}–{r.endTime}
+                        {r.startTime}
                       </span>
                       {r.table && (
                         <span style={{ fontSize: "0.75rem", color: "#5c5248", background: "#f5f3ef", padding: "0.15rem 0.5rem", borderRadius: "4px" }}>
