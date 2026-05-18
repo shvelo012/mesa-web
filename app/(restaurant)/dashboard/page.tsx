@@ -69,6 +69,8 @@ export default function DashboardPage() {
   const [newFloorType, setNewFloorType] = useState("INDOOR");
   const [newFloorWidth, setNewFloorWidth] = useState(800);
   const [newFloorHeight, setNewFloorHeight] = useState(600);
+  const [newFloorWidthRaw, setNewFloorWidthRaw] = useState("800");
+  const [newFloorHeightRaw, setNewFloorHeightRaw] = useState("600");
   const [pendingPreset, setPendingPreset] = useState<FloorPreset | null>(null);
   const [isEditingRestaurant, setIsEditingRestaurant] = useState(false);
   const [editForm, setEditForm] = useState<RestaurantFormData>({ name: "", description: "", address: "", phone: "", email: "", cuisine: "", openTime: "09:00", closeTime: "22:00" });
@@ -77,6 +79,8 @@ export default function DashboardPage() {
   const [deletingFloor, setDeletingFloor] = useState<string | null>(null);
   const [editingFloorId, setEditingFloorId] = useState<string | null>(null);
   const [editFloorForm, setEditFloorForm] = useState({ name: "", sectionType: "INDOOR", width: 800, height: 600 });
+  const [editFloorWidthRaw, setEditFloorWidthRaw] = useState("800");
+  const [editFloorHeightRaw, setEditFloorHeightRaw] = useState("600");
   const [editFloorSaving, setEditFloorSaving] = useState(false);
 
   const days7 = getLast7Days();
@@ -129,12 +133,14 @@ export default function DashboardPage() {
     }
     const { data } = await api.post("/floors", payload);
     setRestaurant((r) => r ? { ...r, floors: [...(r.floors || []), data] } : r);
-    setNewFloorName(""); setNewFloorType("INDOOR"); setNewFloorWidth(800); setNewFloorHeight(600); setPendingPreset(null);
+    setNewFloorName(""); setNewFloorType("INDOOR"); setNewFloorWidth(800); setNewFloorHeight(600); setNewFloorWidthRaw("800"); setNewFloorHeightRaw("600"); setPendingPreset(null);
   }
 
   function startEditFloor(floor: Floor) {
     setEditingFloorId(floor.id);
     setEditFloorForm({ name: floor.name, sectionType: floor.sectionType, width: floor.width, height: floor.height });
+    setEditFloorWidthRaw(String(floor.width));
+    setEditFloorHeightRaw(String(floor.height));
   }
 
   async function handleSaveFloorEdit(floorId: string) {
@@ -483,11 +489,11 @@ export default function DashboardPage() {
                           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
                               <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>W</label>
-                              <input type="number" min={200} max={2000} value={editFloorForm.width} onChange={(e) => setEditFloorForm((f) => ({ ...f, width: Math.max(200, +e.target.value) }))} className="input" style={{ flex: 1 }} />
+                              <input type="text" inputMode="numeric" value={editFloorWidthRaw} onChange={(e) => setEditFloorWidthRaw(e.target.value)} onBlur={() => { const v = parseInt(editFloorWidthRaw, 10); const c = isNaN(v) ? editFloorForm.width : Math.max(200, Math.min(2000, v)); setEditFloorForm((f) => ({ ...f, width: c })); setEditFloorWidthRaw(String(c)); }} className="input" style={{ flex: 1 }} />
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
                               <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>H</label>
-                              <input type="number" min={200} max={2000} value={editFloorForm.height} onChange={(e) => setEditFloorForm((f) => ({ ...f, height: Math.max(200, +e.target.value) }))} className="input" style={{ flex: 1 }} />
+                              <input type="text" inputMode="numeric" value={editFloorHeightRaw} onChange={(e) => setEditFloorHeightRaw(e.target.value)} onBlur={() => { const v = parseInt(editFloorHeightRaw, 10); const c = isNaN(v) ? editFloorForm.height : Math.max(200, Math.min(2000, v)); setEditFloorForm((f) => ({ ...f, height: c })); setEditFloorHeightRaw(String(c)); }} className="input" style={{ flex: 1 }} />
                             </div>
                             <button className="btn btn-primary btn-sm" onClick={() => handleSaveFloorEdit(floor.id)} disabled={editFloorSaving}>{editFloorSaving ? "Saving…" : "Save"}</button>
                             <button className="btn btn-ghost btn-sm" onClick={() => setEditingFloorId(null)}>Cancel</button>
@@ -520,7 +526,7 @@ export default function DashboardPage() {
                     {FLOOR_PRESETS.map((preset) => {
                       const s = SECTION_LABELS[preset.sectionType];
                       return (
-                        <button key={preset.name} type="button" onClick={() => { setNewFloorName(preset.name); setNewFloorType(preset.sectionType); setNewFloorWidth(preset.width); setNewFloorHeight(preset.height); setPendingPreset(preset); }}
+                        <button key={preset.name} type="button" onClick={() => { setNewFloorName(preset.name); setNewFloorType(preset.sectionType); setNewFloorWidth(preset.width); setNewFloorHeight(preset.height); setNewFloorWidthRaw(String(preset.width)); setNewFloorHeightRaw(String(preset.height)); setPendingPreset(preset); }}
                           style={{ fontSize: "0.75rem", fontWeight: 600, padding: "0.35rem 0.625rem", borderRadius: "999px", border: "1px solid rgba(24,22,15,0.12)", background: s?.bg || "#ffffff", color: s?.color || "#5c5248", cursor: "pointer", whiteSpace: "nowrap" }}
                           title={`${preset.name} — ${preset.width}×${preset.height}`}
                         >
@@ -544,11 +550,11 @@ export default function DashboardPage() {
                     <div style={{ display: "flex", gap: "0.625rem", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
                         <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>W</label>
-                        <input type="number" min={200} max={2000} value={newFloorWidth} onChange={(e) => { setNewFloorWidth(Math.max(200, +e.target.value)); setPendingPreset(null); }} className="input" style={{ flex: 1 }} />
+                        <input type="text" inputMode="numeric" value={newFloorWidthRaw} onChange={(e) => { setNewFloorWidthRaw(e.target.value); setPendingPreset(null); }} onBlur={() => { const v = parseInt(newFloorWidthRaw, 10); const c = isNaN(v) ? newFloorWidth : Math.max(200, Math.min(2000, v)); setNewFloorWidth(c); setNewFloorWidthRaw(String(c)); }} className="input" style={{ flex: 1 }} />
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flex: 1 }}>
                         <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>H</label>
-                        <input type="number" min={200} max={2000} value={newFloorHeight} onChange={(e) => { setNewFloorHeight(Math.max(200, +e.target.value)); setPendingPreset(null); }} className="input" style={{ flex: 1 }} />
+                        <input type="text" inputMode="numeric" value={newFloorHeightRaw} onChange={(e) => { setNewFloorHeightRaw(e.target.value); setPendingPreset(null); }} onBlur={() => { const v = parseInt(newFloorHeightRaw, 10); const c = isNaN(v) ? newFloorHeight : Math.max(200, Math.min(2000, v)); setNewFloorHeight(c); setNewFloorHeightRaw(String(c)); }} className="input" style={{ flex: 1 }} />
                       </div>
                       <button className="btn btn-primary btn-md" onClick={addFloor} style={{ flexShrink: 0 }}>Add</button>
                     </div>

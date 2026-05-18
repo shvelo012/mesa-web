@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useCanvasStore } from "@/store/canvas.store";
 import { TableShape } from "@/types";
 
@@ -59,6 +59,19 @@ export default function TableProperties() {
   const { tables, selectedId, updateTable, removeTable, duplicateTable, setSelectedId } = useCanvasStore();
   const table = tables.find((t) => t.id === selectedId);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const [raw, setRaw] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!table) return;
+    setRaw({
+      diameter: String(Math.max(table.width, table.height)),
+      width: String(table.width),
+      height: String(table.height),
+      rotation: String(table.rotation),
+      capacity: String(table.capacity),
+      minCapacity: String(table.minCapacity),
+    });
+  }, [table?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!table) {
     return (
@@ -143,13 +156,16 @@ export default function TableProperties() {
           <div>
             <label style={labelSt}>Diameter</label>
             <input
-              type="number"
-              min={40}
+              type="text"
+              inputMode="numeric"
               style={inputSt}
-              value={diameter}
-              onChange={(e) => {
-                const d = Math.max(40, +e.target.value);
-                update({ width: d, height: d });
+              value={raw.diameter ?? String(diameter)}
+              onChange={(e) => setRaw((r) => ({ ...r, diameter: e.target.value }))}
+              onBlur={() => {
+                const v = parseInt(raw.diameter ?? "", 10);
+                const c = isNaN(v) ? diameter : Math.max(40, v);
+                update({ width: c, height: c });
+                setRaw((r) => ({ ...r, diameter: String(c) }));
               }}
             />
           </div>
@@ -158,21 +174,33 @@ export default function TableProperties() {
             <div>
               <label style={labelSt}>Width</label>
               <input
-                type="number"
-                min={40}
+                type="text"
+                inputMode="numeric"
                 style={inputSt}
-                value={table.width}
-                onChange={(e) => update({ width: Math.max(40, +e.target.value) })}
+                value={raw.width ?? String(table.width)}
+                onChange={(e) => setRaw((r) => ({ ...r, width: e.target.value }))}
+                onBlur={() => {
+                  const v = parseInt(raw.width ?? "", 10);
+                  const c = isNaN(v) ? table.width : Math.max(40, v);
+                  update({ width: c });
+                  setRaw((r) => ({ ...r, width: String(c) }));
+                }}
               />
             </div>
             <div>
               <label style={labelSt}>Height</label>
               <input
-                type="number"
-                min={40}
+                type="text"
+                inputMode="numeric"
                 style={inputSt}
-                value={table.height}
-                onChange={(e) => update({ height: Math.max(40, +e.target.value) })}
+                value={raw.height ?? String(table.height)}
+                onChange={(e) => setRaw((r) => ({ ...r, height: e.target.value }))}
+                onBlur={() => {
+                  const v = parseInt(raw.height ?? "", 10);
+                  const c = isNaN(v) ? table.height : Math.max(40, v);
+                  update({ height: c });
+                  setRaw((r) => ({ ...r, height: String(c) }));
+                }}
               />
             </div>
           </div>
@@ -193,12 +221,21 @@ export default function TableProperties() {
               style={{ flex: 1, accentColor: "#c4410c" }}
             />
             <input
-              type="number"
-              min={0}
-              max={360}
+              type="text"
+              inputMode="numeric"
               style={{ ...inputSt, width: "56px" }}
-              value={table.rotation}
-              onChange={(e) => update({ rotation: Math.min(360, Math.max(0, +e.target.value)) })}
+              value={raw.rotation ?? String(table.rotation)}
+              onChange={(e) => {
+                setRaw((r) => ({ ...r, rotation: e.target.value }));
+                const v = parseInt(e.target.value, 10);
+                if (!isNaN(v) && e.target.value !== "") update({ rotation: Math.min(360, Math.max(0, v)) });
+              }}
+              onBlur={() => {
+                const v = parseInt(raw.rotation ?? "", 10);
+                const c = isNaN(v) ? table.rotation : Math.min(360, Math.max(0, v));
+                update({ rotation: c });
+                setRaw((r) => ({ ...r, rotation: String(c) }));
+              }}
             />
           </div>
         </div>
@@ -212,21 +249,33 @@ export default function TableProperties() {
           <div>
             <label style={labelSt}>Capacity</label>
             <input
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
               style={{ ...inputSt, borderColor: capacityWarning ? "#dc2626" : undefined }}
-              value={table.capacity}
-              onChange={(e) => update({ capacity: Math.max(1, +e.target.value) })}
+              value={raw.capacity ?? String(table.capacity)}
+              onChange={(e) => setRaw((r) => ({ ...r, capacity: e.target.value }))}
+              onBlur={() => {
+                const v = parseInt(raw.capacity ?? "", 10);
+                const c = isNaN(v) ? table.capacity : Math.max(1, v);
+                update({ capacity: c });
+                setRaw((r) => ({ ...r, capacity: String(c) }));
+              }}
             />
           </div>
           <div>
             <label style={labelSt}>Min Party</label>
             <input
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
               style={{ ...inputSt, borderColor: capacityWarning ? "#dc2626" : undefined }}
-              value={table.minCapacity}
-              onChange={(e) => update({ minCapacity: Math.max(1, +e.target.value) })}
+              value={raw.minCapacity ?? String(table.minCapacity)}
+              onChange={(e) => setRaw((r) => ({ ...r, minCapacity: e.target.value }))}
+              onBlur={() => {
+                const v = parseInt(raw.minCapacity ?? "", 10);
+                const c = isNaN(v) ? table.minCapacity : Math.max(1, v);
+                update({ minCapacity: c });
+                setRaw((r) => ({ ...r, minCapacity: String(c) }));
+              }}
             />
           </div>
         </div>
