@@ -4,8 +4,10 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
+import { useTranslation } from "react-i18next";
 
 function ActivateForm() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { login } = useAuthStore();
@@ -19,16 +21,16 @@ function ActivateForm() {
 
   useEffect(() => {
     if (!token) {
-      setError("Invalid or missing activation link.");
+      setError(t("auth.activate.invalidLink"));
     }
-  }, [token]);
+  }, [token, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!token) return;
-    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
-    if (password !== confirm) { setError("Passwords do not match"); return; }
+    if (password.length < 8) { setError(t("auth.activate.passwordTooShort")); return; }
+    if (password !== confirm) { setError(t("auth.activate.passwordMismatch")); return; }
 
     setLoading(true);
     try {
@@ -40,7 +42,7 @@ function ActivateForm() {
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setError(typeof msg === "string" ? msg : "Activation failed. The link may have expired.");
+      setError(typeof msg === "string" ? msg : t("auth.activate.failed"));
     } finally {
       setLoading(false);
     }
@@ -51,15 +53,15 @@ function ActivateForm() {
       <div style={{ width: "100%", maxWidth: "400px" }}>
         <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>mesa</h1>
-          <p style={{ fontSize: "0.875rem", color: "#9a9088", marginTop: "0.25rem" }}>Set your password to activate your account</p>
+          <p style={{ fontSize: "0.875rem", color: "#9a9088", marginTop: "0.25rem" }}>{t("auth.activate.subtitle")}</p>
         </div>
 
         <div className="card" style={{ padding: "1.75rem" }}>
           {success ? (
             <div style={{ textAlign: "center", padding: "1rem 0" }}>
               <div style={{ width: "48px", height: "48px", background: "#f0fdf4", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem", fontSize: "1.5rem" }}>✓</div>
-              <p style={{ fontSize: "1rem", fontWeight: 700, color: "#16a34a" }}>Account activated!</p>
-              <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>Redirecting to dashboard…</p>
+              <p style={{ fontSize: "1rem", fontWeight: 700, color: "#16a34a" }}>{t("auth.activate.activated")}</p>
+              <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>{t("auth.activate.redirecting")}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -69,7 +71,7 @@ function ActivateForm() {
                 </div>
               )}
               <div>
-                <label className="label">New password</label>
+                <label className="label">{t("auth.activate.newPassword")}</label>
                 <input
                   type="password"
                   value={password}
@@ -81,7 +83,7 @@ function ActivateForm() {
                 />
               </div>
               <div>
-                <label className="label">Confirm password</label>
+                <label className="label">{t("auth.activate.confirmPassword")}</label>
                 <input
                   type="password"
                   value={confirm}
@@ -97,7 +99,7 @@ function ActivateForm() {
                 className="btn btn-primary btn-md"
                 style={{ width: "100%", opacity: loading ? 0.65 : 1 }}
               >
-                {loading ? "Activating…" : "Activate account"}
+                {loading ? t("auth.activate.activating") : t("auth.activate.activate")}
               </button>
             </form>
           )}

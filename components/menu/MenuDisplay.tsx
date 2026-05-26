@@ -2,6 +2,7 @@
 
 import { Menu, MenuGroup, MenuItem } from "@/types";
 import { DIETARY_TAG_LABELS } from "@/lib/menu-presets";
+import { useTranslation } from "react-i18next";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "http://localhost:4000";
 

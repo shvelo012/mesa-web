@@ -9,14 +9,10 @@ import { Menu } from "@/types";
 import CreateMenuModal from "@/components/menu/CreateMenuModal";
 import PhotoMenuEditor from "@/components/menu/PhotoMenuEditor";
 import StructuredMenuEditor from "@/components/menu/StructuredMenuEditor";
-
-const LAYOUT_LABELS: Record<string, string> = {
-  LIST: "List",
-  CARD_GRID: "Card Grid",
-  TWO_COLUMN: "Two Column",
-};
+import { useTranslation } from "react-i18next";
 
 export default function MenuPage() {
+  const { t } = useTranslation();
   const { user, logout, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -31,7 +27,7 @@ export default function MenuPage() {
     api.get("/menus/restaurant")
       .then(({ data }) => setMenus(data))
       .finally(() => setLoading(false));
-  }, [user, _hasHydrated]);
+  }, [user, _hasHydrated]); // eslint-disable-line
 
   function handleCreated(menu: Menu) {
     setMenus((prev) => [...prev, menu]);
@@ -50,7 +46,7 @@ export default function MenuPage() {
       setMenus((prev) => prev.filter((m) => m.id !== menuId));
       if (expandedId === menuId) setExpandedId(null);
     } catch {
-      alert("Failed to delete menu.");
+      alert(t("menu.failedDelete"));
     } finally {
       setDeletingId(null);
     }
@@ -75,15 +71,15 @@ export default function MenuPage() {
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem", height: "64px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             <Link href="/dashboard" style={{ fontSize: "1.25rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", textDecoration: "none" }}>mesa</Link>
-            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.2rem 0.625rem", borderRadius: "999px" }}>Owner</span>
+            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.2rem 0.625rem", borderRadius: "999px" }}>{t("badge.owner")}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Link href="/dashboard" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>Dashboard</Link>
-            <Link href="/manage-reservations" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>Reservations</Link>
+            <Link href="/dashboard" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>{t("nav.dashboard")}</Link>
+            <Link href="/manage-reservations" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>{t("nav.reservations")}</Link>
             {can("REPORTS") && (
-              <Link href="/dashboard/reports" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>Reports</Link>
+              <Link href="/dashboard/reports" style={{ fontSize: "0.875rem", color: "#5c5248", textDecoration: "none" }}>{t("nav.reports")}</Link>
             )}
-            <button onClick={logout} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.875rem", color: "#9a9088", fontFamily: "inherit" }}>Sign out</button>
+            <button onClick={logout} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.875rem", color: "#9a9088", fontFamily: "inherit" }}>{t("nav.signOut")}</button>
           </div>
         </div>
       </nav>
@@ -92,19 +88,19 @@ export default function MenuPage() {
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "2rem 1.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
           <div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#18160f", letterSpacing: "-0.02em", margin: 0 }}>Menus</h1>
-            <p style={{ fontSize: "0.9375rem", color: "#5c5248", margin: "0.375rem 0 0" }}>Create and manage your restaurant menus</p>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#18160f", letterSpacing: "-0.02em", margin: 0 }}>{t("menu.title")}</h1>
+            <p style={{ fontSize: "0.9375rem", color: "#5c5248", margin: "0.375rem 0 0" }}>{t("menu.subtitle")}</p>
           </div>
-          <button onClick={() => setShowCreate(true)} className="btn btn-primary btn-md">+ Create menu</button>
+          <button onClick={() => setShowCreate(true)} className="btn btn-primary btn-md">{t("menu.createMenu")}</button>
         </div>
 
         {/* Empty state */}
         {menus.length === 0 && (
           <div style={{ textAlign: "center", padding: "4rem 2rem", border: "2px dashed rgba(24,22,15,0.14)", borderRadius: "14px", background: "#fafaf8" }}>
             <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🍽️</div>
-            <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", margin: "0 0 0.5rem" }}>No menus yet</h2>
-            <p style={{ fontSize: "0.9375rem", color: "#5c5248", margin: "0 0 1.5rem" }}>Create your first menu — photo or structured.</p>
-            <button onClick={() => setShowCreate(true)} className="btn btn-primary btn-md">Create menu</button>
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", margin: "0 0 0.5rem" }}>{t("menu.noMenus")}</h2>
+            <p style={{ fontSize: "0.9375rem", color: "#5c5248", margin: "0 0 1.5rem" }}>{t("menu.noMenusSub")}</p>
+            <button onClick={() => setShowCreate(true)} className="btn btn-primary btn-md">{t("menu.createMenu")}</button>
           </div>
         )}
 
@@ -112,6 +108,8 @@ export default function MenuPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {menus.map((menu) => {
             const expanded = expandedId === menu.id;
+            const photoCount = (menu.photos ?? []).length;
+            const sectionCount = (menu.groups ?? []).length;
             return (
               <div key={menu.id} style={{ background: "#fff", borderRadius: "12px", border: "1px solid rgba(24,22,15,0.09)", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
                 {/* Menu card header */}
@@ -125,8 +123,8 @@ export default function MenuPage() {
                     <div style={{ fontWeight: 700, fontSize: "1rem", color: "#18160f" }}>{menu.name}</div>
                     <div style={{ fontSize: "0.8125rem", color: "#9a9088", marginTop: "0.125rem" }}>
                       {menu.type === "PHOTO"
-                        ? `${(menu.photos ?? []).length} photo${(menu.photos ?? []).length !== 1 ? "s" : ""}`
-                        : `${(menu.groups ?? []).length} section${(menu.groups ?? []).length !== 1 ? "s" : ""} · ${LAYOUT_LABELS[menu.layoutStyle ?? "LIST"] ?? menu.layoutStyle}`
+                        ? t("menu.photoCount", { count: photoCount })
+                        : `${t("menu.sections", { count: sectionCount })} · ${menu.layoutStyle ?? "LIST"}`
                       }
                     </div>
                   </div>
@@ -135,14 +133,14 @@ export default function MenuPage() {
                       onClick={() => setExpandedId(expanded ? null : menu.id)}
                       className="btn btn-outline btn-sm"
                     >
-                      {expanded ? "Collapse" : "Edit content"}
+                      {expanded ? t("menu.collapse") : t("menu.editContent")}
                     </button>
                     <button
                       onClick={() => handleDelete(menu.id, menu.name)}
                       disabled={deletingId === menu.id}
                       style={{ background: "none", border: "1px solid rgba(220,38,38,0.2)", borderRadius: "6px", padding: "0.25rem 0.625rem", cursor: "pointer", fontSize: "0.8125rem", color: "#dc2626", fontFamily: "inherit" }}
                     >
-                      {deletingId === menu.id ? "…" : "Delete"}
+                      {deletingId === menu.id ? "…" : t("menu.delete")}
                     </button>
                   </div>
                 </div>

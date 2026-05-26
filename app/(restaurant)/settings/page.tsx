@@ -7,10 +7,12 @@ import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import { Restaurant } from "@/types";
 import ChangePasswordForm from "@/components/ui/ChangePasswordForm";
+import { useTranslation } from "react-i18next";
 
 type Mode = "reply-to" | "custom-smtp";
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user, logout, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -59,7 +61,7 @@ export default function SettingsPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [user, _hasHydrated]);
+  }, [user, _hasHydrated]); // eslint-disable-line
 
   function set(k: keyof typeof form, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -83,7 +85,6 @@ export default function SettingsPage() {
         body.smtpUser = form.smtpUser;
         if (form.smtpPass) body.smtpPass = form.smtpPass;
       } else {
-        // clear any stored SMTP config
         body.smtpHost = null;
         body.smtpPort = null;
         body.smtpUser = null;
@@ -98,7 +99,7 @@ export default function SettingsPage() {
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })
         ?.response?.data?.error;
-      setError(typeof msg === "string" ? msg : "Failed to save");
+      setError(typeof msg === "string" ? msg : t("settings.failedSave"));
     } finally {
       setSaving(false);
     }
@@ -126,7 +127,7 @@ export default function SettingsPage() {
       setTimeout(() => setTimesSuccess(false), 3000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setTimesError(typeof msg === "string" ? msg : "Failed to save");
+      setTimesError(typeof msg === "string" ? msg : t("settings.timesError"));
     } finally {
       setTimesSaving(false);
     }
@@ -196,21 +197,21 @@ export default function SettingsPage() {
                 borderRadius: "999px",
               }}
             >
-              Owner
+              {t("badge.owner")}
             </span>
           </div>
           <div
             style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
           >
             <Link href="/dashboard">
-              <button className="btn btn-ghost btn-sm">Dashboard</button>
+              <button className="btn btn-ghost btn-sm">{t("nav.dashboard")}</button>
             </Link>
             <Link href="/manage-reservations">
-              <button className="btn btn-ghost btn-sm">Reservations</button>
+              <button className="btn btn-ghost btn-sm">{t("nav.reservations")}</button>
             </Link>
             {can("REPORTS") && (
               <Link href="/dashboard/reports">
-                <button className="btn btn-ghost btn-sm">Reports</button>
+                <button className="btn btn-ghost btn-sm">{t("nav.reports")}</button>
               </Link>
             )}
             {user && (
@@ -225,7 +226,7 @@ export default function SettingsPage() {
                 router.push("/");
               }}
             >
-              Sign out
+              {t("nav.signOut")}
             </button>
           </div>
         </div>
@@ -247,7 +248,7 @@ export default function SettingsPage() {
               letterSpacing: "-0.02em",
             }}
           >
-            Email settings
+            {t("settings.title")}
           </h1>
           {restaurant && (
             <p
@@ -274,7 +275,7 @@ export default function SettingsPage() {
               letterSpacing: "0.04em",
             }}
           >
-            How should emails be sent?
+            {t("settings.howSend")}
           </p>
           <div
             style={{
@@ -315,7 +316,7 @@ export default function SettingsPage() {
                     color: "#18160f",
                   }}
                 >
-                  Mesa email server
+                  {t("settings.mesaServer")}
                 </p>
                 <p
                   style={{
@@ -325,8 +326,7 @@ export default function SettingsPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Emails send through Mesa. Your address is set as Reply-To so
-                  guests can reply directly to you. No extra setup needed.
+                  {t("settings.mesaServerDesc")}
                 </p>
               </div>
             </label>
@@ -362,7 +362,7 @@ export default function SettingsPage() {
                     color: "#18160f",
                   }}
                 >
-                  Your own email account
+                  {t("settings.ownAccount")}
                   {restaurant?.smtpConfigured && (
                     <span
                       style={{
@@ -375,7 +375,7 @@ export default function SettingsPage() {
                         borderRadius: "999px",
                       }}
                     >
-                      Active
+                      {t("settings.active")}
                     </span>
                   )}
                 </p>
@@ -387,10 +387,7 @@ export default function SettingsPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Emails send directly from your address using your SMTP
-                  credentials. Guests see your restaurant&apos;s email in the
-                  From field. Works with Gmail App Passwords, Google Workspace,
-                  or any business email.
+                  {t("settings.ownAccountDesc")}
                 </p>
               </div>
             </label>
@@ -430,7 +427,7 @@ export default function SettingsPage() {
                   marginBottom: "1.25rem",
                 }}
               >
-                Settings saved.
+                {t("settings.saved")}
               </div>
             )}
 
@@ -443,14 +440,14 @@ export default function SettingsPage() {
               }}
             >
               <div>
-                <label className="label">Contact email</label>
+                <label className="label">{t("settings.contactEmail")}</label>
                 <input
                   type="email"
                   required
                   value={form.email}
                   onChange={(e) => set("email", e.target.value)}
                   className="input"
-                  placeholder="hello@yourrestaurant.com"
+                  placeholder={t("settings.contactEmailPlaceholder")}
                 />
                 <p
                   style={{
@@ -460,14 +457,14 @@ export default function SettingsPage() {
                   }}
                 >
                   {mode === "reply-to"
-                    ? "Shown publicly. Guests who reply will reach this address."
-                    : "Shown publicly and used as the From address on outgoing emails."}
+                    ? t("settings.contactEmailNoteReplyTo")
+                    : t("settings.contactEmailNoteSmtp")}
                 </p>
               </div>
 
               <div>
                 <label className="label">
-                  Notification email
+                  {t("settings.notificationEmail")}
                   <span
                     style={{
                       fontWeight: 400,
@@ -476,7 +473,7 @@ export default function SettingsPage() {
                       marginLeft: "0.375rem",
                     }}
                   >
-                    (optional)
+                    {t("settings.notificationEmailOptional")}
                   </span>
                 </label>
                 <input
@@ -484,7 +481,7 @@ export default function SettingsPage() {
                   value={form.notificationEmail}
                   onChange={(e) => set("notificationEmail", e.target.value)}
                   className="input"
-                  placeholder="Defaults to contact email"
+                  placeholder={t("settings.notificationEmailPlaceholder")}
                 />
                 <p
                   style={{
@@ -493,8 +490,7 @@ export default function SettingsPage() {
                     marginTop: "0.375rem",
                   }}
                 >
-                  Where new booking alerts are sent. Leave blank to use your
-                  contact email.
+                  {t("settings.notificationEmailNote")}
                 </p>
               </div>
 
@@ -514,7 +510,7 @@ export default function SettingsPage() {
                         marginBottom: "1rem",
                       }}
                     >
-                      SMTP credentials
+                      {t("settings.smtpCredentials")}
                     </p>
                     <div
                       style={{
@@ -531,17 +527,17 @@ export default function SettingsPage() {
                         }}
                       >
                         <div>
-                          <label className="label">Host</label>
+                          <label className="label">{t("settings.host")}</label>
                           <input
                             required
                             value={form.smtpHost}
                             onChange={(e) => set("smtpHost", e.target.value)}
                             className="input"
-                            placeholder="smtp.gmail.com"
+                            placeholder={t("settings.hostPlaceholder")}
                           />
                         </div>
                         <div>
-                          <label className="label">Port</label>
+                          <label className="label">{t("settings.port")}</label>
                           <input
                             required
                             type="text"
@@ -553,18 +549,18 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <div>
-                        <label className="label">Username</label>
+                        <label className="label">{t("settings.username")}</label>
                         <input
                           required
                           value={form.smtpUser}
                           onChange={(e) => set("smtpUser", e.target.value)}
                           className="input"
-                          placeholder="owner@yourrestaurant.com"
+                          placeholder={t("settings.usernamePlaceholder")}
                         />
                       </div>
                       <div>
                         <label className="label">
-                          Password / App password
+                          {t("settings.password")}
                           {restaurant?.smtpConfigured && (
                             <span
                               style={{
@@ -574,7 +570,7 @@ export default function SettingsPage() {
                                 marginLeft: "0.375rem",
                               }}
                             >
-                              — leave blank to keep existing
+                              {t("settings.passwordKeep")}
                             </span>
                           )}
                         </label>
@@ -587,7 +583,7 @@ export default function SettingsPage() {
                           placeholder={
                             restaurant?.smtpConfigured
                               ? "••••••••"
-                              : "Enter password or App Password"
+                              : t("settings.passwordPlaceholder")
                           }
                           autoComplete="new-password"
                         />
@@ -599,8 +595,7 @@ export default function SettingsPage() {
                               marginTop: "0.375rem",
                             }}
                           >
-                            Gmail: Google Account → Security → 2-Step
-                            Verification → App passwords
+                            {t("settings.gmailNote")}
                           </p>
                         )}
                       </div>
@@ -615,14 +610,14 @@ export default function SettingsPage() {
                 className="btn btn-primary btn-md"
                 style={{ marginTop: "0.25rem" }}
               >
-                {saving ? "Saving…" : "Save settings"}
+                {saving ? t("settings.saving") : t("settings.save")}
               </button>
             </form>
           </div>
 
           <div className="card" style={{ padding: "1.75rem", marginTop: "1.25rem" }}>
             <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>
-              Change password
+              {t("settings.changePassword")}
             </h2>
             <ChangePasswordForm />
           </div>
@@ -631,10 +626,10 @@ export default function SettingsPage() {
         {/* Reservation times */}
         <div className="anim-3 card" style={{ opacity: 0, padding: "1.75rem", marginTop: "1.5rem" }}>
           <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "0.375rem" }}>
-            Reservation times
+            {t("settings.reservationTimes")}
           </h2>
           <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginBottom: "1.25rem", lineHeight: 1.5 }}>
-            Define the specific times guests can book. If none are set, all 30-minute slots between open and close time are available.
+            {t("settings.reservationTimesNote")}
           </p>
 
           {timesError && (
@@ -644,19 +639,19 @@ export default function SettingsPage() {
           )}
           {timesSuccess && (
             <div style={{ padding: "0.75rem 1rem", background: "#f0fdf4", border: "1px solid rgba(22,163,74,0.2)", borderRadius: "8px", color: "#16a34a", fontSize: "0.875rem", marginBottom: "1rem" }}>
-              Times saved.
+              {t("settings.timesSaved")}
             </div>
           )}
 
           {reservationTimes.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1rem" }}>
-              {reservationTimes.map((t) => (
-                <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#fef2ec", border: "1px solid rgba(196,65,12,0.2)", borderRadius: "999px", padding: "0.25rem 0.75rem", fontSize: "0.875rem", color: "#c4410c", fontWeight: 600 }}>
-                  {t}
+              {reservationTimes.map((timeVal) => (
+                <span key={timeVal} style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", background: "#fef2ec", border: "1px solid rgba(196,65,12,0.2)", borderRadius: "999px", padding: "0.25rem 0.75rem", fontSize: "0.875rem", color: "#c4410c", fontWeight: 600 }}>
+                  {timeVal}
                   <button
-                    onClick={() => removeTime(t)}
+                    onClick={() => removeTime(timeVal)}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "#c4410c", fontSize: "1rem", lineHeight: 1, padding: 0, display: "flex", alignItems: "center" }}
-                    aria-label={`Remove ${t}`}
+                    aria-label={`Remove ${timeVal}`}
                   >
                     ×
                   </button>
@@ -667,7 +662,7 @@ export default function SettingsPage() {
 
           {reservationTimes.length === 0 && (
             <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginBottom: "1rem", fontStyle: "italic" }}>
-              No custom times set — using open/close slot generation.
+              {t("settings.noCustomTimes")}
             </p>
           )}
 
@@ -686,7 +681,7 @@ export default function SettingsPage() {
               className="btn btn-outline btn-md"
               style={{ opacity: newTime ? 1 : 0.5 }}
             >
-              Add time
+              {t("settings.addTime")}
             </button>
           </div>
 
@@ -695,7 +690,7 @@ export default function SettingsPage() {
             disabled={timesSaving}
             className="btn btn-primary btn-md"
           >
-            {timesSaving ? "Saving…" : "Save times"}
+            {timesSaving ? t("settings.saving") : t("settings.saveTimes")}
           </button>
         </div>
       </div>

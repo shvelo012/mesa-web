@@ -1,8 +1,10 @@
 "use client";
 
 import { useCanvasStore } from "@/store/canvas.store";
+import { useTranslation } from "react-i18next";
 
 export default function LayerPanel() {
+  const { t } = useTranslation();
   const { tables, walls, selectedId, hiddenIds, setSelectedId, toggleHidden, removeTable, removeWall } = useCanvasStore();
 
   return (
@@ -11,7 +13,7 @@ export default function LayerPanel() {
       <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid rgba(24,22,15,0.08)", background: "#fafaf8" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
-            Tables
+            {t("layerPanel.title")}
           </p>
           <span style={{ fontSize: "0.75rem", color: "#c8c4be", fontWeight: 600 }}>{tables.length}</span>
         </div>
@@ -20,7 +22,7 @@ export default function LayerPanel() {
       <div style={{ overflowY: "auto", flex: 1 }}>
         {tables.length === 0 && (
           <div style={{ padding: "1rem", textAlign: "center" }}>
-            <p style={{ fontSize: "0.8125rem", color: "#c8c4be" }}>No tables</p>
+            <p style={{ fontSize: "0.8125rem", color: "#c8c4be" }}>{t("layerPanel.noTables")}</p>
           </div>
         )}
         {tables.map((t) => {

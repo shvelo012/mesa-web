@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { Review } from "@/types";
 import StarRating from "./StarRating";
+import { useTranslation } from "react-i18next";
 
 interface ReviewFormProps {
   restaurantId: string;
@@ -13,6 +14,7 @@ interface ReviewFormProps {
 }
 
 export default function ReviewForm({ restaurantId, existing, onSaved, onCancel }: ReviewFormProps) {
+  const { t } = useTranslation();
   const [stars, setStars] = useState(existing?.stars ?? 0);
   const [text, setText] = useState(existing?.text ?? "");
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +24,7 @@ export default function ReviewForm({ restaurantId, existing, onSaved, onCancel }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (stars === 0) { setErr("Pick at least 1 star"); return; }
+    if (stars === 0) { setErr(t("reviews.rateFirst")); return; }
     setErr("");
     setSubmitting(true);
     try {
@@ -35,7 +37,7 @@ export default function ReviewForm({ restaurantId, existing, onSaved, onCancel }
       onSaved(data);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setErr(msg || "Failed to save review");
+      setErr(msg || (isEdit ? t("reviews.failedUpdate") : t("reviews.failedSubmit")));
     } finally {
       setSubmitting(false);
     }
@@ -45,20 +47,20 @@ export default function ReviewForm({ restaurantId, existing, onSaved, onCancel }
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
       <div>
         <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#5c5248", display: "block", marginBottom: "0.375rem" }}>
-          Rating
+          {t("reviews.yourRating")}
         </label>
         <StarRating value={stars} onChange={setStars} size={28} />
       </div>
       <div>
         <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#5c5248", display: "block", marginBottom: "0.375rem" }}>
-          Review <span style={{ fontWeight: 400, color: "#9a9088" }}>(optional)</span>
+          {t("reviews.comment")} <span style={{ fontWeight: 400, color: "#9a9088" }}>{t("common.optional")}</span>
         </label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={3}
           className="input"
-          placeholder="Tell others about your experience…"
+          placeholder={t("reviews.commentPlaceholder")}
           maxLength={1000}
         />
       </div>
@@ -72,11 +74,11 @@ export default function ReviewForm({ restaurantId, existing, onSaved, onCancel }
       )}
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <button type="submit" disabled={submitting} className="btn btn-primary btn-sm">
-          {submitting ? "Saving…" : isEdit ? "Save edit" : "Submit review"}
+          {submitting ? t("reviews.submitting") : isEdit ? t("reviews.save") : t("reviews.submit")}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className="btn btn-ghost btn-sm">
-            Cancel
+            {t("reviews.cancel")}
           </button>
         )}
       </div>

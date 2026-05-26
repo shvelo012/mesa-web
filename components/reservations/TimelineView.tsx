@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
 const STATUS_COLOR: Record<string, { bg: string; text: string }> = {
   PENDING:   { bg: "#fffbeb", text: "#b45309" },
   CONFIRMED: { bg: "#f0fdf4", text: "#16a34a" },
@@ -45,6 +47,7 @@ function generateSlots(open: string, close: string, step = 60): string[] {
 }
 
 export default function TimelineView({ reservations, date, openTime, closeTime, onAction }: Props) {
+  const { t } = useTranslation();
   const open = timeToMinutes(openTime);
   const close = timeToMinutes(closeTime);
   const totalMins = close - open;
@@ -70,8 +73,8 @@ export default function TimelineView({ reservations, date, openTime, closeTime, 
   if (!tables.length) {
     return (
       <div style={{ padding: "3rem 2rem", textAlign: "center" }}>
-        <p style={{ fontSize: "1rem", fontWeight: 600, color: "#18160f", marginBottom: "0.25rem" }}>No reservations on this date</p>
-        <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>Timeline view shows reservations for {date}</p>
+        <p style={{ fontSize: "1rem", fontWeight: 600, color: "#18160f", marginBottom: "0.25rem" }}>{t("timeline.noReservations")}</p>
+        <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>{date}</p>
       </div>
     );
   }

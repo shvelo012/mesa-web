@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 type ConfirmationData = {
   id: string;
@@ -22,13 +23,13 @@ type ConfirmationData = {
   restaurantPhone?: string;
 };
 
-const STATUS_UI: Record<string, { label: string; bg: string; color: string; icon: string }> = {
-  PENDING:   { label: "Pending review", bg: "#fffbeb", color: "#b45309", icon: "⏳" },
-  CONFIRMED: { label: "Confirmed",       bg: "#f0fdf4", color: "#16a34a", icon: "✓" },
-  CANCELLED: { label: "Cancelled",       bg: "#fef2f2", color: "#dc2626", icon: "✕" },
-  COMPLETED: { label: "Completed",       bg: "#eff6ff", color: "#2563eb", icon: "✓" },
-  NO_SHOW:   { label: "No-show",         bg: "#f8f8f7", color: "#9a9088", icon: "○" },
-  SEATED:    { label: "Seated",          bg: "#f5f3ff", color: "#7c3aed", icon: "✓" },
+const STATUS_UI: Record<string, { bg: string; color: string; icon: string }> = {
+  PENDING:   { bg: "#fffbeb", color: "#b45309", icon: "⏳" },
+  CONFIRMED: { bg: "#f0fdf4", color: "#16a34a", icon: "✓" },
+  CANCELLED: { bg: "#fef2f2", color: "#dc2626", icon: "✕" },
+  COMPLETED: { bg: "#eff6ff", color: "#2563eb", icon: "✓" },
+  NO_SHOW:   { bg: "#f8f8f7", color: "#9a9088", icon: "○" },
+  SEATED:    { bg: "#f5f3ff", color: "#7c3aed", icon: "✓" },
 };
 
 function buildCalendarUrl(r: ConfirmationData): string {
@@ -93,6 +94,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function ReservationConfirmationPage() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [data, setData] = useState<ConfirmationData | null>(null);
@@ -109,14 +111,14 @@ export default function ReservationConfirmationPage() {
   }, [token]);
 
   async function handleCancel() {
-    if (!window.confirm("Cancel your reservation?")) return;
+    if (!window.confirm(t("reservation.cancelConfirm"))) return;
     setCancelling(true);
     try {
       await api.patch(`/reservations/confirm/${token}/cancel`);
       setCancelled(true);
       setData((d) => d ? { ...d, status: "CANCELLED" } : d);
     } catch {
-      alert("Could not cancel — please contact the restaurant directly.");
+      alert(t("reservation.cancelFailed"));
     } finally {
       setCancelling(false);
     }
@@ -135,9 +137,9 @@ export default function ReservationConfirmationPage() {
       <div style={{ minHeight: "100vh", background: "#f5f3ef", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center", padding: "2rem" }}>
           <p style={{ fontSize: "2rem", marginBottom: "0.75rem", opacity: 0.4 }}>🔍</p>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#18160f", marginBottom: "0.5rem" }}>Reservation not found</h2>
-          <p style={{ fontSize: "0.875rem", color: "#9a9088", marginBottom: "1.5rem" }}>This link may have expired or the reservation was removed.</p>
-          <Link href="/restaurants" className="btn btn-primary btn-md" style={{ textDecoration: "none" }}>Browse restaurants</Link>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#18160f", marginBottom: "0.5rem" }}>{t("reservation.notFound")}</h2>
+          <p style={{ fontSize: "0.875rem", color: "#9a9088", marginBottom: "1.5rem" }}>{t("reservation.notFoundSub")}</p>
+          <Link href="/restaurants" className="btn btn-primary btn-md" style={{ textDecoration: "none" }}>{t("reservation.browseRestaurants")}</Link>
         </div>
       </div>
     );
@@ -157,7 +159,7 @@ export default function ReservationConfirmationPage() {
             onClick={() => router.push("/restaurants")}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#9a9088", fontSize: "0.875rem", fontFamily: "inherit", display: "flex", alignItems: "center", gap: "0.35rem" }}
           >
-            ← Restaurants
+            {t("nav.backToRestaurants")}
           </button>
           <div style={{ width: "1px", height: "16px", background: "rgba(24,22,15,0.1)" }} />
           <span style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>mesa</span>
@@ -181,17 +183,17 @@ export default function ReservationConfirmationPage() {
         >
           <div style={{ fontSize: "2.75rem", marginBottom: "0.625rem", lineHeight: 1 }}>{ui.icon}</div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.25rem" }}>
-            {isPending ? "Request received!" : isConfirmed ? "You\'re confirmed!" : `Reservation ${ui.label}`}
+            {isPending ? t("reservation.requestReceived") : isConfirmed ? t("reservation.youreConfirmed") : t("reservation.statusUI." + data.status)}
           </h1>
-          <p style={{ fontSize: "0.9375rem", color: ui.color, fontWeight: 600, margin: 0 }}>{ui.label}</p>
+          <p style={{ fontSize: "0.9375rem", color: ui.color, fontWeight: 600, margin: 0 }}>{t("reservation.statusUI." + data.status)}</p>
           {isPending && (
             <p style={{ fontSize: "0.875rem", color: "#5c5248", marginTop: "0.625rem", maxWidth: "380px", margin: "0.625rem auto 0" }}>
-              The restaurant will review and confirm. You&apos;ll receive an email update.
+              {t("reservation.reviewEmail")}
             </p>
           )}
           {isConfirmed && (
             <p style={{ fontSize: "0.875rem", color: "#5c5248", marginTop: "0.625rem" }}>
-              Show this page or the QR code at the restaurant.
+              {t("reservation.showPage")}
             </p>
           )}
         </div>
@@ -203,44 +205,44 @@ export default function ReservationConfirmationPage() {
             {/* Details */}
             <div style={{ padding: "1.75rem" }}>
               <p style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1.25rem" }}>
-                Booking details
+                {t("reservation.bookingDetails")}
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
                 {data.restaurantName && (
                   <div style={{ gridColumn: "span 2" }}>
-                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Restaurant</p>
+                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>{t("reservation.restaurant")}</p>
                     <p style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f" }}>{data.restaurantName}</p>
                     {data.restaurantAddress && <p style={{ fontSize: "0.8125rem", color: "#5c5248" }}>{data.restaurantAddress}</p>}
                   </div>
                 )}
                 <div>
-                  <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Date</p>
+                  <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>{t("reservation.date")}</p>
                   <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{formatDate(data.date)}</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Time</p>
+                  <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>{t("reservation.time")}</p>
                   <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{data.startTime}</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Party size</p>
-                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{data.partySize} guest{data.partySize > 1 ? "s" : ""}</p>
+                  <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>{t("reservation.partySize")}</p>
+                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{t("reservation.guests", { count: data.partySize })}</p>
                 </div>
                 {data.tableLabel && (
                   <div>
-                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Table</p>
+                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>{t("reservation.table")}</p>
                     <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>Table {data.tableLabel}</p>
                   </div>
                 )}
                 {data.guestName && (
                   <div>
-                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Name</p>
+                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>{t("reservation.name")}</p>
                     <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{data.guestName}</p>
                   </div>
                 )}
                 {data.notes && (
                   <div style={{ gridColumn: "span 2" }}>
-                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>Special requests</p>
+                    <p style={{ fontSize: "0.75rem", color: "#9a9088", marginBottom: "0.2rem" }}>{t("reservation.specialRequests")}</p>
                     <p style={{ fontSize: "0.875rem", color: "#5c5248", fontStyle: "italic" }}>&quot;{data.notes}&quot;</p>
                   </div>
                 )}
@@ -251,7 +253,7 @@ export default function ReservationConfirmationPage() {
             {isConfirmed && (
               <div style={{ padding: "1.75rem", borderLeft: "1px solid rgba(24,22,15,0.07)", background: "#fafaf8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.75rem" }}>
                 <QRCode value={confirmationUrl} size={140} />
-                <p style={{ fontSize: "0.7rem", color: "#9a9088", textAlign: "center", maxWidth: "120px" }}>Show at the restaurant</p>
+                <p style={{ fontSize: "0.7rem", color: "#9a9088", textAlign: "center", maxWidth: "120px" }}>{t("reservation.showAtRestaurant")}</p>
               </div>
             )}
           </div>
@@ -283,7 +285,7 @@ export default function ReservationConfirmationPage() {
                   }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4285f4" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  Google Calendar
+                  {t("reservation.googleCalendar")}
                 </a>
                 <button
                   onClick={() => downloadIcs(data)}
@@ -313,21 +315,21 @@ export default function ReservationConfirmationPage() {
                 disabled={cancelling}
                 style={{ padding: "0.75rem 1rem", background: "transparent", color: "#9a9088", border: "1px solid rgba(24,22,15,0.12)", borderRadius: "10px", fontFamily: "inherit", fontSize: "0.875rem", cursor: cancelling ? "not-allowed" : "pointer" }}
               >
-                {cancelling ? "Cancelling…" : "Cancel reservation"}
+                {cancelling ? t("reservation.cancelling") : t("reservation.cancelReservation")}
               </button>
             </>
           )}
 
           <Link href="/restaurants" style={{ textDecoration: "none" }}>
             <button style={{ width: "100%", padding: "0.75rem 1rem", background: "#f5f3ef", color: "#5c5248", border: "none", borderRadius: "10px", fontFamily: "inherit", fontSize: "0.875rem", cursor: "pointer", fontWeight: 500 }}>
-              Browse more restaurants
+              {t("reservation.browseMore")}
             </button>
           </Link>
         </div>
 
         {data.restaurantPhone && (
           <p style={{ textAlign: "center", fontSize: "0.8125rem", color: "#9a9088", marginTop: "1.5rem" }}>
-            Questions? <a href={`tel:${data.restaurantPhone}`} style={{ color: "#c4410c" }}>{data.restaurantName} · {data.restaurantPhone}</a>
+            {t("reservation.questions")} <a href={`tel:${data.restaurantPhone}`} style={{ color: "#c4410c" }}>{data.restaurantName} · {data.restaurantPhone}</a>
           </p>
         )}
       </div>

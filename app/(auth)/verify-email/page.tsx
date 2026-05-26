@@ -5,18 +5,20 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
+import { useTranslation } from "react-i18next";
 
 export default function VerifyEmailPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, markEmailVerified } = useAuthStore();
+  const { markEmailVerified } = useAuthStore();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const token = searchParams.get("token");
     if (!token) {
-      setErrorMsg("No verification token found in URL.");
+      setErrorMsg(t("auth.verifyEmail.noToken"));
       setStatus("error");
       return;
     }
@@ -31,7 +33,7 @@ export default function VerifyEmailPage() {
       })
       .catch((err: unknown) => {
         const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-        setErrorMsg(msg || "Invalid or expired verification link.");
+        setErrorMsg(msg || t("auth.verifyEmail.invalidLink"));
         setStatus("error");
       });
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,7 +51,7 @@ export default function VerifyEmailPage() {
           {status === "loading" && (
             <>
               <div style={{ width: "40px", height: "40px", border: "3px solid #f0ede8", borderTopColor: "#c4410c", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 1.5rem" }} />
-              <p style={{ fontSize: "1rem", color: "#5c5248" }}>Verifying your email…</p>
+              <p style={{ fontSize: "1rem", color: "#5c5248" }}>{t("auth.verifyEmail.verifying")}</p>
             </>
           )}
 
@@ -57,10 +59,10 @@ export default function VerifyEmailPage() {
             <>
               <div style={{ fontSize: "3rem", marginBottom: "1.25rem" }}>✅</div>
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
-                Email verified
+                {t("auth.verifyEmail.successTitle")}
               </h1>
               <p style={{ fontSize: "0.9375rem", color: "#5c5248" }}>
-                Redirecting you now…
+                {t("auth.verifyEmail.successSub")}
               </p>
             </>
           )}
@@ -69,13 +71,13 @@ export default function VerifyEmailPage() {
             <>
               <div style={{ fontSize: "3rem", marginBottom: "1.25rem" }}>❌</div>
               <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
-                Verification failed
+                {t("auth.verifyEmail.failedTitle")}
               </h1>
               <p style={{ fontSize: "0.9375rem", color: "#dc2626", marginBottom: "1.5rem" }}>
                 {errorMsg}
               </p>
               <Link href="/verify-email/pending" style={{ fontSize: "0.875rem", color: "#c4410c", fontWeight: 600, textDecoration: "none" }}>
-                Request a new link →
+                {t("auth.verifyEmail.requestNew")}
               </Link>
             </>
           )}

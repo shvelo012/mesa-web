@@ -8,6 +8,8 @@ import { api } from "@/lib/api";
 import { Restaurant, Floor } from "@/types";
 import { FLOOR_PRESETS, FloorPreset } from "@/lib/floorPresets";
 import Sparkline from "@/components/ui/Sparkline";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 
 const SECTION_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   INDOOR:  { label: "Indoor",  color: "#2563eb", bg: "#eff6ff" },
@@ -58,6 +60,7 @@ function nowTime(): string {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { user, logout, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -150,7 +153,7 @@ export default function DashboardPage() {
       setRestaurant((r) => r ? { ...r, floors: (r.floors || []).map((f) => (f.id === floorId ? { ...f, ...data } : f)) } : r);
       setEditingFloorId(null);
     } catch {
-      alert("Failed to save floor section.");
+      alert(t("dashboard.failedFloor"));
     } finally {
       setEditFloorSaving(false);
     }
@@ -163,7 +166,7 @@ export default function DashboardPage() {
       await api.delete(`/floors/${floorId}`);
       setRestaurant((r) => r ? { ...r, floors: (r.floors || []).filter((f) => f.id !== floorId) } : r);
     } catch {
-      alert("Failed to delete floor section.");
+      alert(t("dashboard.failedDeleteFloor"));
     } finally {
       setDeletingFloor(null);
     }
@@ -185,7 +188,7 @@ export default function DashboardPage() {
       setIsEditingRestaurant(false);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setEditError(typeof msg === "string" ? msg : "Failed to save changes");
+      setEditError(typeof msg === "string" ? msg : t("dashboard.failedSave"));
     } finally {
       setEditSaving(false);
     }
@@ -212,7 +215,7 @@ export default function DashboardPage() {
         >
           <div style={{ background: "#ffffff", borderRadius: "12px", padding: "2rem", width: "100%", maxWidth: "560px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-              <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f" }}>Edit restaurant</h2>
+              <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f" }}>{t("dashboard.editRestaurant")}</h2>
               <button onClick={() => setIsEditingRestaurant(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9a9088", fontSize: "1.25rem", lineHeight: 1, fontFamily: "inherit" }}>×</button>
             </div>
             {editError && (
@@ -221,43 +224,43 @@ export default function DashboardPage() {
             <form onSubmit={handleEditRestaurant} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label className="label">Restaurant name</label>
+                  <label className="label">{t("dashboard.restaurantName")}</label>
                   <input required value={editForm.name} onChange={(e) => setEdit("name", e.target.value)} className="input" />
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label className="label">Address</label>
+                  <label className="label">{t("dashboard.address")}</label>
                   <input required value={editForm.address} onChange={(e) => setEdit("address", e.target.value)} className="input" />
                 </div>
                 <div>
-                  <label className="label">Cuisine type</label>
-                  <input value={editForm.cuisine} onChange={(e) => setEdit("cuisine", e.target.value)} className="input" placeholder="e.g. Italian" />
+                  <label className="label">{t("dashboard.cuisineType")}</label>
+                  <input value={editForm.cuisine} onChange={(e) => setEdit("cuisine", e.target.value)} className="input" placeholder={t("dashboard.cuisinePlaceholder")} />
                 </div>
                 <div>
-                  <label className="label">Phone</label>
+                  <label className="label">{t("dashboard.phone")}</label>
                   <input value={editForm.phone} onChange={(e) => setEdit("phone", e.target.value)} className="input" />
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label className="label">Email</label>
+                  <label className="label">{t("dashboard.emailLabel")}</label>
                   <input type="email" value={editForm.email} onChange={(e) => setEdit("email", e.target.value)} className="input" />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", gridColumn: "span 2" }}>
                   <div>
-                    <label className="label">Opens</label>
+                    <label className="label">{t("dashboard.opens")}</label>
                     <input type="time" value={editForm.openTime} onChange={(e) => setEdit("openTime", e.target.value)} className="input" />
                   </div>
                   <div>
-                    <label className="label">Closes</label>
+                    <label className="label">{t("dashboard.closes")}</label>
                     <input type="time" value={editForm.closeTime} onChange={(e) => setEdit("closeTime", e.target.value)} className="input" />
                   </div>
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label className="label">Description <span style={{ fontWeight: 400, color: "#9a9088" }}>(optional)</span></label>
+                  <label className="label">{t("dashboard.description")} <span style={{ fontWeight: 400, color: "#9a9088" }}>{t("dashboard.descriptionOptional")}</span></label>
                   <textarea value={editForm.description} onChange={(e) => setEdit("description", e.target.value)} rows={3} className="input" />
                 </div>
               </div>
               <div style={{ display: "flex", gap: "0.625rem", marginTop: "0.25rem" }}>
-                <button type="submit" disabled={editSaving} className="btn btn-primary btn-md" style={{ flex: 1 }}>{editSaving ? "Saving…" : "Save changes"}</button>
-                <button type="button" onClick={() => setIsEditingRestaurant(false)} className="btn btn-ghost btn-md">Cancel</button>
+                <button type="submit" disabled={editSaving} className="btn btn-primary btn-md" style={{ flex: 1 }}>{editSaving ? t("dashboard.saving") : t("dashboard.saveChanges")}</button>
+                <button type="button" onClick={() => setIsEditingRestaurant(false)} className="btn btn-ghost btn-md">{t("dashboard.cancel")}</button>
               </div>
             </form>
           </div>
@@ -270,13 +273,13 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.875rem" }}>
             <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>mesa</span>
             <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#c4410c", background: "#fef2ec", padding: "0.2rem 0.625rem", borderRadius: "999px" }}>
-              {user?.role === "RESTAURANT_OWNER" ? "Owner" : "Staff"}
+              {user?.role === "RESTAURANT_OWNER" ? t("dashboard.owner") : t("dashboard.staff")}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <Link href="/manage-reservations" style={{ textDecoration: "none" }}>
               <button className="btn btn-ghost btn-sm" style={{ position: "relative" }}>
-                Reservations
+                {t("nav.reservations")}
                 {pending > 0 && (
                   <span style={{ position: "absolute", top: "-4px", right: "-4px", width: "16px", height: "16px", background: "#c4410c", color: "#fff", borderRadius: "50%", fontSize: "0.6rem", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {pending}
@@ -284,12 +287,13 @@ export default function DashboardPage() {
                 )}
               </button>
             </Link>
-            <Link href="/menu" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">Menu</button></Link>
-            <Link href="/settings" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">Settings</button></Link>
-            {can("REPORTS") && <Link href="/dashboard/reports" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">Reports</button></Link>}
-            {can("STAFF_MANAGE") && <Link href="/dashboard/staff" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">Staff</button></Link>}
+            <Link href="/menu" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.menu")}</button></Link>
+            <Link href="/settings" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.settings")}</button></Link>
+            {can("REPORTS") && <Link href="/dashboard/reports" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.reports")}</button></Link>}
+            {can("STAFF_MANAGE") && <Link href="/dashboard/staff" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.staff")}</button></Link>}
             {user && <span style={{ fontSize: "0.875rem", color: "#9a9088" }}>{user.name}</span>}
-            <button className="btn btn-ghost btn-sm" onClick={() => { logout(); router.push("/"); }}>Sign out</button>
+            <LanguageSwitcher />
+            <button className="btn btn-ghost btn-sm" onClick={() => { logout(); router.push("/"); }}>{t("nav.signOut")}</button>
           </div>
         </div>
       </nav>
@@ -310,8 +314,8 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
-                  <button className="btn btn-ghost btn-sm" onClick={openEditRestaurant}>Edit info</button>
-                  <Link href={`/restaurants/${restaurant.id}`} className="btn btn-ghost btn-sm" style={{ textDecoration: "none" }} target="_blank">View public page ↗</Link>
+                  <button className="btn btn-ghost btn-sm" onClick={openEditRestaurant}>{t("dashboard.editInfo")}</button>
+                  <Link href={`/restaurants/${restaurant.id}`} className="btn btn-ghost btn-sm" style={{ textDecoration: "none" }} target="_blank">{t("dashboard.viewPublic")}</Link>
                 </div>
               </div>
             </div>
@@ -320,11 +324,11 @@ export default function DashboardPage() {
             {pending > 0 && (
               <div className="anim-1" style={{ opacity: 0, display: "flex", gap: "0.75rem", marginBottom: "1.25rem", padding: "0.875rem 1.25rem", background: "#fffbeb", border: "1px solid rgba(180,83,9,0.25)", borderRadius: "10px", alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#b45309" }}>
-                  {pending} pending request{pending > 1 ? "s" : ""} waiting
+                  {t("dashboard.pendingRequests", { count: pending })}
                 </span>
                 <div style={{ flex: 1 }} />
                 <Link href="/manage-reservations?tab=PENDING" style={{ textDecoration: "none" }}>
-                  <button className="btn btn-ghost btn-sm" style={{ borderColor: "rgba(180,83,9,0.3)", color: "#b45309" }}>Review reservations</button>
+                  <button className="btn btn-ghost btn-sm" style={{ borderColor: "rgba(180,83,9,0.3)", color: "#b45309" }}>{t("dashboard.reviewReservations")}</button>
                 </Link>
               </div>
             )}
@@ -332,10 +336,10 @@ export default function DashboardPage() {
             {/* Stats with sparklines */}
             <div className="anim-2" style={{ opacity: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
               {[
-                { value: total, label: "Total reservations", color: "#18160f", sparkData: totalSparkline, sparkColor: "#18160f" },
-                { value: pending, label: "Awaiting review", color: pending > 0 ? "#b45309" : "#18160f", sparkData: pendingSparkline, sparkColor: "#b45309" },
-                { value: confirmed, label: "Confirmed", color: "#16a34a", sparkData: confirmedSparkline, sparkColor: "#16a34a" },
-                { value: (restaurant.floors || []).length, label: "Floor sections", color: "#18160f", sparkData: null, sparkColor: "#18160f" },
+                { value: total, label: t("dashboard.totalReservations"), color: "#18160f", sparkData: totalSparkline, sparkColor: "#18160f" },
+                { value: pending, label: t("dashboard.awaitingReview"), color: pending > 0 ? "#b45309" : "#18160f", sparkData: pendingSparkline, sparkColor: "#b45309" },
+                { value: confirmed, label: t("dashboard.confirmed"), color: "#16a34a", sparkData: confirmedSparkline, sparkColor: "#16a34a" },
+                { value: (restaurant.floors || []).length, label: t("dashboard.floorSections"), color: "#18160f", sparkData: null, sparkColor: "#18160f" },
               ].map(({ value, label, color, sparkData, sparkColor }) => (
                 <div key={label} className="card" style={{ padding: "1.25rem 1.5rem" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
@@ -350,7 +354,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   {sparkData && (
-                    <p style={{ fontSize: "0.7rem", color: "#c8c4be", marginTop: "0.5rem" }}>7-day trend</p>
+                    <p style={{ fontSize: "0.7rem", color: "#c8c4be", marginTop: "0.5rem" }}>{t("dashboard.sevenDayTrend")}</p>
                   )}
                 </div>
               ))}
@@ -362,11 +366,11 @@ export default function DashboardPage() {
                 <div className="card" style={{ padding: "1.25rem 1.5rem" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
                     <h2 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#18160f" }}>
-                      Today&apos;s bookings
-                      <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#9a9088", marginLeft: "0.5rem" }}>{todayConfirmed.length} total</span>
+                      {t("dashboard.todaysBookings")}
+                      <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#9a9088", marginLeft: "0.5rem" }}>{todayConfirmed.length} {t("dashboard.total")}</span>
                     </h2>
                     <Link href={`/manage-reservations?date=${today}&tab=CONFIRMED`} style={{ textDecoration: "none", fontSize: "0.8125rem", color: "#c4410c" }}>
-                      Manage →
+                      {t("dashboard.manage")}
                     </Link>
                   </div>
 
@@ -374,10 +378,10 @@ export default function DashboardPage() {
                     {/* Currently seated */}
                     <div>
                       <p style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.5rem" }}>
-                        Seated now · {nowSeated.length}
+                        {t("dashboard.seatedNow", { count: nowSeated.length })}
                       </p>
                       {nowSeated.length === 0 ? (
-                        <p style={{ fontSize: "0.8125rem", color: "#c8c4be" }}>None currently</p>
+                        <p style={{ fontSize: "0.8125rem", color: "#c8c4be" }}>{t("dashboard.none")}</p>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
                           {nowSeated.slice(0, 4).map((r) => (
@@ -390,10 +394,10 @@ export default function DashboardPage() {
                     {/* Arriving next */}
                     <div>
                       <p style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.5rem" }}>
-                        Arriving next · {arriving.length}
+                        {t("dashboard.arrivingNext", { count: arriving.length })}
                       </p>
                       {arriving.length === 0 ? (
-                        <p style={{ fontSize: "0.8125rem", color: "#c8c4be" }}>No more today</p>
+                        <p style={{ fontSize: "0.8125rem", color: "#c8c4be" }}>{t("dashboard.noMoreToday")}</p>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
                           {arriving.slice(0, 4).map((r) => (
@@ -406,7 +410,7 @@ export default function DashboardPage() {
                     {/* Peak hours heatmap */}
                     <div>
                       <p style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.5rem" }}>
-                        Peak hours
+                        {t("dashboard.peakHours")}
                       </p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
                         {PEAK_HOURS.map((h) => {
@@ -438,7 +442,7 @@ export default function DashboardPage() {
                           );
                         })}
                       </div>
-                      <p style={{ fontSize: "0.7rem", color: "#c8c4be", marginTop: "0.5rem" }}>Hover for count</p>
+                      <p style={{ fontSize: "0.7rem", color: "#c8c4be", marginTop: "0.5rem" }}>{t("dashboard.hoverForCount")}</p>
                     </div>
                   </div>
                 </div>
@@ -449,12 +453,12 @@ export default function DashboardPage() {
             {todayConfirmed.length === 0 && (
               <div className="anim-2" style={{ opacity: 0, marginBottom: "1.5rem", padding: "1rem 1.5rem", background: "#ffffff", border: "1px solid rgba(24,22,15,0.07)", borderRadius: "10px", display: "flex", alignItems: "center", gap: "1rem" }}>
                 <div>
-                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>No confirmed bookings today</p>
-                  <p style={{ fontSize: "0.8125rem", color: "#9a9088" }}>Timeline will appear when guests are confirmed for today.</p>
+                  <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{t("dashboard.noConfirmedToday")}</p>
+                  <p style={{ fontSize: "0.8125rem", color: "#9a9088" }}>{t("dashboard.timelineNote")}</p>
                 </div>
                 <div style={{ marginLeft: "auto" }}>
                   <Link href="/new-booking" style={{ textDecoration: "none" }}>
-                    <button className="btn btn-primary btn-sm">+ Add booking</button>
+                    <button className="btn btn-primary btn-sm">{t("dashboard.addBooking")}</button>
                   </Link>
                 </div>
               </div>
@@ -464,12 +468,12 @@ export default function DashboardPage() {
 
               {/* Floors */}
               <div className="anim-3 card" style={{ opacity: 0, padding: "1.5rem" }}>
-                <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>Floor Sections</h2>
+                <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>{t("dashboard.floorSectionsTitle")}</h2>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.5rem" }}>
                   {(restaurant.floors || []).length === 0 && (
                     <div style={{ padding: "2rem", textAlign: "center", background: "#f5f3ef", borderRadius: "8px", border: "2px dashed rgba(24,22,15,0.1)" }}>
-                      <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>No floors yet — add your first section below.</p>
+                      <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>{t("dashboard.noFloorsYet")}</p>
                     </div>
                   )}
                   {(restaurant.floors || []).map((floor: Floor) => {
@@ -480,9 +484,9 @@ export default function DashboardPage() {
                       return (
                         <div key={floor.id} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.875rem 1rem", background: "#fafaf8", border: "1px solid rgba(24,22,15,0.08)", borderRadius: "8px" }}>
                           <div style={{ display: "flex", gap: "0.5rem" }}>
-                            <input value={editFloorForm.name} onChange={(e) => setEditFloorForm((f) => ({ ...f, name: e.target.value }))} className="input" style={{ flex: 1 }} placeholder="Section name" />
+                            <input value={editFloorForm.name} onChange={(e) => setEditFloorForm((f) => ({ ...f, name: e.target.value }))} className="input" style={{ flex: 1 }} placeholder={t("dashboard.sectionName")} />
                             <select value={editFloorForm.sectionType} onChange={(e) => setEditFloorForm((f) => ({ ...f, sectionType: e.target.value }))} className="input" style={{ width: "auto" }}>
-                              <option value="INDOOR">Indoor</option><option value="OUTDOOR">Outdoor</option><option value="BAR">Bar</option><option value="PRIVATE">Private</option>
+                              <option value="INDOOR">{t("dashboard.sectionTypes.INDOOR")}</option><option value="OUTDOOR">{t("dashboard.sectionTypes.OUTDOOR")}</option><option value="BAR">{t("dashboard.sectionTypes.BAR")}</option><option value="PRIVATE">{t("dashboard.sectionTypes.PRIVATE")}</option>
                             </select>
                           </div>
                           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -494,8 +498,8 @@ export default function DashboardPage() {
                               <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>H</label>
                               <input type="text" inputMode="numeric" value={editFloorHeightRaw} onChange={(e) => setEditFloorHeightRaw(e.target.value)} onBlur={() => { const v = parseInt(editFloorHeightRaw, 10); const c = isNaN(v) ? editFloorForm.height : Math.max(200, Math.min(2000, v)); setEditFloorForm((f) => ({ ...f, height: c })); setEditFloorHeightRaw(String(c)); }} className="input" style={{ flex: 1 }} />
                             </div>
-                            <button className="btn btn-primary btn-sm" onClick={() => handleSaveFloorEdit(floor.id)} disabled={editFloorSaving}>{editFloorSaving ? "Saving…" : "Save"}</button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingFloorId(null)}>Cancel</button>
+                            <button className="btn btn-primary btn-sm" onClick={() => handleSaveFloorEdit(floor.id)} disabled={editFloorSaving}>{editFloorSaving ? t("dashboard.saving") : t("dashboard.saveFloor")}</button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingFloorId(null)}>{t("dashboard.cancel")}</button>
                           </div>
                         </div>
                       );
@@ -510,8 +514,8 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: "0.375rem", flexShrink: 0 }}>
-                          <button onClick={() => startEditFloor(floor)} className="btn btn-sm btn-outline">Edit</button>
-                          <Link href={`/editor/${floor.id}`} className="btn btn-sm btn-outline" style={{ textDecoration: "none" }}>Edit layout</Link>
+                          <button onClick={() => startEditFloor(floor)} className="btn btn-sm btn-outline">{t("common.edit")}</button>
+                          <Link href={`/editor/${floor.id}`} className="btn btn-sm btn-outline" style={{ textDecoration: "none" }}>{t("dashboard.editLayout")}</Link>
                           <button onClick={() => handleDeleteFloor(floor.id, floor.name)} disabled={isDeleting} title="Delete" style={{ padding: "0.35rem 0.5rem", background: "#fef2f2", border: "none", borderRadius: "6px", color: "#dc2626", cursor: isDeleting ? "not-allowed" : "pointer", fontSize: "0.875rem", lineHeight: 1 }}>×</button>
                         </div>
                       </div>
@@ -520,7 +524,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div style={{ paddingTop: "1.25rem", borderTop: "1px solid rgba(24,22,15,0.08)" }}>
-                  <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#5c5248", marginBottom: "0.875rem" }}>Add a section</p>
+                  <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#5c5248", marginBottom: "0.875rem" }}>{t("dashboard.addSection")}</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1rem" }}>
                     {FLOOR_PRESETS.map((preset) => {
                       const s = SECTION_LABELS[preset.sectionType];
@@ -541,9 +545,9 @@ export default function DashboardPage() {
                   )}
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
                     <div style={{ display: "flex", gap: "0.625rem" }}>
-                      <input placeholder="Section name" value={newFloorName} onChange={(e) => { setNewFloorName(e.target.value); setPendingPreset(null); }} className="input" style={{ flex: 1 }} onKeyDown={(e) => e.key === "Enter" && addFloor()} />
+                      <input placeholder={t("dashboard.sectionName")} value={newFloorName} onChange={(e) => { setNewFloorName(e.target.value); setPendingPreset(null); }} className="input" style={{ flex: 1 }} onKeyDown={(e) => e.key === "Enter" && addFloor()} />
                       <select value={newFloorType} onChange={(e) => { setNewFloorType(e.target.value); setPendingPreset(null); }} className="input" style={{ width: "auto" }}>
-                        <option value="INDOOR">Indoor</option><option value="OUTDOOR">Outdoor</option><option value="BAR">Bar</option><option value="PRIVATE">Private</option>
+                        <option value="INDOOR">{t("dashboard.sectionTypes.INDOOR")}</option><option value="OUTDOOR">{t("dashboard.sectionTypes.OUTDOOR")}</option><option value="BAR">{t("dashboard.sectionTypes.BAR")}</option><option value="PRIVATE">{t("dashboard.sectionTypes.PRIVATE")}</option>
                       </select>
                     </div>
                     <div style={{ display: "flex", gap: "0.625rem", alignItems: "center" }}>
@@ -555,7 +559,7 @@ export default function DashboardPage() {
                         <label style={{ fontSize: "0.8125rem", color: "#9a9088", whiteSpace: "nowrap" }}>H</label>
                         <input type="text" inputMode="numeric" value={newFloorHeightRaw} onChange={(e) => { setNewFloorHeightRaw(e.target.value); setPendingPreset(null); }} onBlur={() => { const v = parseInt(newFloorHeightRaw, 10); const c = isNaN(v) ? newFloorHeight : Math.max(200, Math.min(2000, v)); setNewFloorHeight(c); setNewFloorHeightRaw(String(c)); }} className="input" style={{ flex: 1 }} />
                       </div>
-                      <button className="btn btn-primary btn-md" onClick={addFloor} style={{ flexShrink: 0 }}>Add</button>
+                      <button className="btn btn-primary btn-md" onClick={addFloor} style={{ flexShrink: 0 }}>{t("dashboard.add")}</button>
                     </div>
                   </div>
                 </div>
@@ -566,52 +570,52 @@ export default function DashboardPage() {
                 <Link href="/manage-reservations" style={{ textDecoration: "none" }}>
                   <div className="card-hover" style={{ padding: "1.5rem", cursor: "pointer" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                      <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#18160f" }}>Reservations</h3>
-                      <span style={{ fontSize: "0.875rem", color: "#c4410c" }}>Manage →</span>
+                      <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#18160f" }}>{t("nav.reservations")}</h3>
+                      <span style={{ fontSize: "0.875rem", color: "#c4410c" }}>{t("dashboard.manage")}</span>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "0.875rem", color: "#5c5248" }}>Pending review</span>
+                        <span style={{ fontSize: "0.875rem", color: "#5c5248" }}>{t("dashboard.pendingReview")}</span>
                         <span style={{ fontSize: "1rem", fontWeight: 700, color: pending > 0 ? "#b45309" : "#18160f" }}>{pending}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "0.875rem", color: "#5c5248" }}>Confirmed</span>
+                        <span style={{ fontSize: "0.875rem", color: "#5c5248" }}>{t("dashboard.confirmed")}</span>
                         <span style={{ fontSize: "1rem", fontWeight: 700, color: "#16a34a" }}>{confirmed}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "0.875rem", color: "#5c5248" }}>Total</span>
+                        <span style={{ fontSize: "0.875rem", color: "#5c5248" }}>{t("dashboard.totalReservations")}</span>
                         <span style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f" }}>{total}</span>
                       </div>
                     </div>
                     {pending > 0 && (
                       <div style={{ marginTop: "1rem", padding: "0.5rem 0.75rem", background: "#fffbeb", border: "1px solid rgba(180,83,9,0.2)", borderRadius: "6px", fontSize: "0.8125rem", color: "#b45309", fontWeight: 500 }}>
-                        {pending} request{pending > 1 ? "s" : ""} waiting for response
+                        {t("dashboard.pendingRequests", { count: pending })}
                       </div>
                     )}
                   </div>
                 </Link>
 
                 <div className="card" style={{ padding: "1.25rem 1.5rem" }}>
-                  <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#5c5248", marginBottom: "0.625rem" }}>Quick actions</p>
+                  <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#5c5248", marginBottom: "0.625rem" }}>{t("dashboard.quickActions")}</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     <Link href="/new-booking" style={{ textDecoration: "none" }}>
                       <button style={{ width: "100%", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", border: "1px solid rgba(24,22,15,0.12)", borderRadius: "8px", cursor: "pointer", background: "#fff", color: "#18160f", textAlign: "center" }}>
-                        + New manual booking
+                        {t("dashboard.newManualBooking")}
                       </button>
                     </Link>
                     <Link href="/manage-reservations" style={{ textDecoration: "none" }}>
                       <button style={{ width: "100%", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 500, fontFamily: "inherit", border: "1px solid rgba(24,22,15,0.08)", borderRadius: "8px", cursor: "pointer", background: "#f5f3ef", color: "#5c5248", textAlign: "center" }}>
-                        View all reservations
+                        {t("dashboard.viewAllReservations")}
                       </button>
                     </Link>
                     <Link href="/menu" style={{ textDecoration: "none" }}>
                       <button style={{ width: "100%", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 500, fontFamily: "inherit", border: "1px solid rgba(24,22,15,0.08)", borderRadius: "8px", cursor: "pointer", background: "#f5f3ef", color: "#5c5248", textAlign: "center" }}>
-                        Manage menus
+                        {t("dashboard.manageMenus")}
                       </button>
                     </Link>
                     <Link href={`/restaurants/${restaurant.id}`} target="_blank" style={{ textDecoration: "none" }}>
                       <button style={{ width: "100%", padding: "0.5rem 1rem", fontSize: "0.875rem", fontWeight: 500, fontFamily: "inherit", border: "1px solid rgba(24,22,15,0.08)", borderRadius: "8px", cursor: "pointer", background: "#f5f3ef", color: "#5c5248", textAlign: "center" }}>
-                        View public page ↗
+                        {t("dashboard.viewPublic")}
                       </button>
                     </Link>
                   </div>
@@ -654,6 +658,7 @@ function TimelineCard({ r, highlight }: { r: ResDashItem; highlight: "current" |
 }
 
 function CreateRestaurantForm({ onCreated }: { onCreated: (r: Restaurant) => void }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({ name: "", description: "", address: "", phone: "", email: "", cuisine: "", openTime: "09:00", closeTime: "22:00" });
   const [error, setError] = useState("");
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -665,56 +670,56 @@ function CreateRestaurantForm({ onCreated }: { onCreated: (r: Restaurant) => voi
       onCreated(data);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setError(msg || "Failed to create restaurant");
+      setError(msg || t("dashboard.createRestaurant.failed"));
     }
   }
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto" }}>
       <div className="anim-1" style={{ opacity: 0, marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>List your restaurant</h1>
-        <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>Complete your profile to start accepting reservations.</p>
+        <h1 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>{t("dashboard.createRestaurant.title")}</h1>
+        <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>{t("dashboard.createRestaurant.subtitle")}</p>
       </div>
       <div className="anim-2 card" style={{ opacity: 0, padding: "2rem" }}>
         {error && <div style={{ padding: "0.75rem 1rem", background: "#fef2f2", border: "1px solid rgba(220,38,38,0.2)", borderRadius: "8px", color: "#dc2626", fontSize: "0.875rem", marginBottom: "1.5rem" }}>{error}</div>}
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "1.125rem" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div style={{ gridColumn: "span 2" }}>
-              <label className="label">Restaurant name</label>
-              <input required value={form.name} onChange={(e) => set("name", e.target.value)} className="input" placeholder="e.g. The Golden Fork" />
+              <label className="label">{t("dashboard.createRestaurant.restaurantName")}</label>
+              <input required value={form.name} onChange={(e) => set("name", e.target.value)} className="input" placeholder={t("dashboard.createRestaurant.restaurantNamePlaceholder")} />
             </div>
             <div style={{ gridColumn: "span 2" }}>
-              <label className="label">Address</label>
-              <input required value={form.address} onChange={(e) => set("address", e.target.value)} className="input" placeholder="123 Main St, City" />
+              <label className="label">{t("dashboard.createRestaurant.address")}</label>
+              <input required value={form.address} onChange={(e) => set("address", e.target.value)} className="input" placeholder={t("dashboard.createRestaurant.addressPlaceholder")} />
             </div>
             <div>
-              <label className="label">Cuisine type</label>
-              <input value={form.cuisine} onChange={(e) => set("cuisine", e.target.value)} className="input" placeholder="e.g. Italian" />
+              <label className="label">{t("dashboard.createRestaurant.cuisineType")}</label>
+              <input value={form.cuisine} onChange={(e) => set("cuisine", e.target.value)} className="input" placeholder={t("dashboard.createRestaurant.cuisinePlaceholder")} />
             </div>
             <div>
-              <label className="label">Phone</label>
-              <input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="input" placeholder="+1 555 000 0000" />
+              <label className="label">{t("dashboard.createRestaurant.phone")}</label>
+              <input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="input" placeholder={t("dashboard.createRestaurant.phonePlaceholder")} />
             </div>
             <div>
-              <label className="label">Email</label>
-              <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className="input" placeholder="hello@restaurant.com" />
+              <label className="label">{t("dashboard.createRestaurant.emailLabel")}</label>
+              <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className="input" placeholder={t("dashboard.createRestaurant.emailPlaceholder")} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
               <div>
-                <label className="label">Opens</label>
+                <label className="label">{t("dashboard.createRestaurant.opens")}</label>
                 <input type="time" value={form.openTime} onChange={(e) => set("openTime", e.target.value)} className="input" />
               </div>
               <div>
-                <label className="label">Closes</label>
+                <label className="label">{t("dashboard.createRestaurant.closes")}</label>
                 <input type="time" value={form.closeTime} onChange={(e) => set("closeTime", e.target.value)} className="input" />
               </div>
             </div>
             <div style={{ gridColumn: "span 2" }}>
-              <label className="label">Description <span style={{ fontWeight: 400, color: "#9a9088" }}>(optional)</span></label>
-              <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={3} className="input" placeholder="Tell guests what makes your restaurant special…" />
+              <label className="label">{t("dashboard.createRestaurant.description")} <span style={{ fontWeight: 400, color: "#9a9088" }}>{t("dashboard.createRestaurant.descriptionOptional")}</span></label>
+              <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={3} className="input" placeholder={t("dashboard.createRestaurant.descriptionPlaceholder")} />
             </div>
           </div>
-          <button type="submit" className="btn btn-primary btn-md" style={{ width: "100%", marginTop: "0.5rem" }}>Create restaurant profile</button>
+          <button type="submit" className="btn btn-primary btn-md" style={{ width: "100%", marginTop: "0.5rem" }}>{t("dashboard.createRestaurant.createProfile")}</button>
         </form>
       </div>
     </div>

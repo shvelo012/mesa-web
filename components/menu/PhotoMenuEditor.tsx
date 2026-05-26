@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Menu, MenuPhoto } from "@/types";
 import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ?? "http://localhost:4000";
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function PhotoMenuEditor({ menu, onUpdate }: Props) {
+  const { t } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");

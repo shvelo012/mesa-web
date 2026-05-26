@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 type GuestReservation = {
   id: string;
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export default function GuestProfileModal({ guestEmail, guestName, onClose }: Props) {
+  const { t } = useTranslation();
   const [reservations, setReservations] = useState<GuestReservation[]>([]);
   const [notes, setNotes] = useState<GuestNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,9 +104,9 @@ export default function GuestProfileModal({ guestEmail, guestName, onClose }: Pr
         {!loading && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.75rem", padding: "0.875rem 1.5rem", borderBottom: "1px solid rgba(24,22,15,0.06)" }}>
             {[
-              { label: "Total visits", value: total, color: "#18160f" },
-              { label: "Confirmed", value: confirmed, color: "#16a34a" },
-              { label: "No-shows", value: noShows, color: noShows > 0 ? "#dc2626" : "#18160f" },
+              { label: t("guestProfile.totalVisits"), value: total, color: "#18160f" },
+              { label: t("guestProfile.confirmed"), value: confirmed, color: "#16a34a" },
+              { label: t("guestProfile.noShows"), value: noShows, color: noShows > 0 ? "#dc2626" : "#18160f" },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ textAlign: "center" }}>
                 <p style={{ fontSize: "1.375rem", fontWeight: 700, color, margin: 0 }}>{value}</p>
@@ -124,10 +126,10 @@ export default function GuestProfileModal({ guestEmail, guestName, onClose }: Pr
               {/* Reservation history */}
               <div>
                 <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.625rem" }}>
-                  Reservation history
+                  {t("guestProfile.reservationHistory")}
                 </p>
                 {reservations.length === 0 ? (
-                  <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>No reservations found</p>
+                  <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>{t("guestProfile.noReservations")}</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
                     {reservations.map((r) => {
@@ -155,14 +157,14 @@ export default function GuestProfileModal({ guestEmail, guestName, onClose }: Pr
               {/* Staff notes */}
               <div>
                 <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.625rem" }}>
-                  Staff notes
+                  {t("guestProfile.staffNotes")}
                 </p>
                 <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.625rem" }}>
                   <input
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addNote()}
-                    placeholder="Add a note…"
+                    placeholder={t("guestProfile.addNote")}
                     className="input"
                     style={{ flex: 1 }}
                   />
@@ -172,11 +174,11 @@ export default function GuestProfileModal({ guestEmail, guestName, onClose }: Pr
                     className="btn btn-primary btn-sm"
                     style={{ flexShrink: 0 }}
                   >
-                    {addingNote ? "…" : "Add"}
+                    {addingNote ? "…" : t("guestProfile.add")}
                   </button>
                 </div>
                 {notes.length === 0 ? (
-                  <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>No notes yet</p>
+                  <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>{t("guestProfile.noNotes")}</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
                     {notes.map((n) => (

@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 export default function VerificationBanner() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [dismissed, setDismissed] = useState(false);
   const [resending, setResending] = useState(false);
@@ -37,19 +39,17 @@ export default function VerificationBanner() {
       color: "#92400e",
       flexWrap: "wrap",
     }}>
-      <span>
-        ⚠️ Please verify your email address — check your inbox for a link from Mesa.
-      </span>
+      <span>{t("verification.banner")}</span>
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
         {resent ? (
-          <span style={{ color: "#16a34a", fontWeight: 600 }}>Email sent ✓</span>
+          <span style={{ color: "#16a34a", fontWeight: 600 }}>{t("verification.sent")}</span>
         ) : (
           <button
             onClick={handleResend}
             disabled={resending}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#b45309", fontWeight: 600, fontFamily: "inherit", fontSize: "0.8125rem", padding: 0, textDecoration: "underline" }}
           >
-            {resending ? "Sending…" : "Resend"}
+            {resending ? t("verification.resending") : t("verification.resend")}
           </button>
         )}
         <button

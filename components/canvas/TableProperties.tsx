@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useCanvasStore } from "@/store/canvas.store";
 import { TableShape } from "@/types";
+import { useTranslation } from "react-i18next";
 
 async function fileToCompressedDataUrl(file: File, maxDim = 720, quality = 0.78): Promise<string> {
   const dataUrl: string = await new Promise((resolve, reject) => {
@@ -56,6 +57,7 @@ const sectionSt: React.CSSProperties = {
 };
 
 export default function TableProperties() {
+  const { t } = useTranslation();
   const { tables, selectedId, updateTable, removeTable, duplicateTable, setSelectedId } = useCanvasStore();
   const table = tables.find((t) => t.id === selectedId);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -78,10 +80,10 @@ export default function TableProperties() {
       <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
         <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem", opacity: 0.3 }}>⬡</div>
         <p style={{ fontSize: "0.8125rem", color: "#9a9088", lineHeight: 1.5 }}>
-          Click a table to edit properties.
+          {t("tableProperties.noSelection")}
         </p>
         <p style={{ fontSize: "0.75rem", color: "#c8c4be", marginTop: "0.5rem", lineHeight: 1.4 }}>
-          Del/Backspace — delete selected
+          {t("tableProperties.deleteHint")}
         </p>
       </div>
     );
@@ -98,7 +100,7 @@ export default function TableProperties() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
         <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "#18160f" }}>
-          Table {table.label}
+          {t("tableProperties.title", { label: table.label })}
         </span>
         <div style={{ display: "flex", gap: "0.375rem" }}>
           <button
@@ -106,14 +108,14 @@ export default function TableProperties() {
             title="Duplicate table"
             style={{ fontSize: "0.75rem", fontWeight: 600, background: "#f0ede8", border: "none", borderRadius: "4px", color: "#5c5248", cursor: "pointer", padding: "0.25rem 0.5rem", fontFamily: "inherit" }}
           >
-            Copy
+            {t("tableProperties.copy")}
           </button>
           <button
             onClick={() => { removeTable(table.id); setSelectedId(null); }}
             title="Delete table (Del)"
             style={{ fontSize: "0.75rem", fontWeight: 600, background: "#fef2f2", border: "none", borderRadius: "4px", color: "#dc2626", cursor: "pointer", padding: "0.25rem 0.5rem", fontFamily: "inherit" }}
           >
-            Delete
+            {t("tableProperties.delete")}
           </button>
         </div>
       </div>
@@ -123,12 +125,12 @@ export default function TableProperties() {
       {/* Identity */}
       <div style={sectionSt}>
         <div>
-          <label style={labelSt}>Label</label>
+          <label style={labelSt}>{t("tableProperties.label")}</label>
           <input style={inputSt} value={table.label} onChange={(e) => update({ label: e.target.value })} />
         </div>
 
         <div>
-          <label style={labelSt}>Shape</label>
+          <label style={labelSt}>{t("tableProperties.shape")}</label>
           <select style={inputSt} value={table.shape} onChange={(e) => {
             const shape = e.target.value as TableShape;
             if (shape === "CIRCLE") {
@@ -141,9 +143,9 @@ export default function TableProperties() {
               update({ shape });
             }
           }}>
-            <option value="RECTANGLE">Rectangle</option>
-            <option value="SQUARE">Square</option>
-            <option value="CIRCLE">Circle</option>
+            <option value="RECTANGLE">{t("tableProperties.shapes.RECTANGLE")}</option>
+            <option value="SQUARE">{t("tableProperties.shapes.SQUARE")}</option>
+            <option value="CIRCLE">{t("tableProperties.shapes.CIRCLE")}</option>
           </select>
         </div>
       </div>
@@ -154,7 +156,7 @@ export default function TableProperties() {
       <div style={sectionSt}>
         {isCircle ? (
           <div>
-            <label style={labelSt}>Diameter</label>
+            <label style={labelSt}>{t("tableProperties.diameter")}</label>
             <input
               type="text"
               inputMode="numeric"
@@ -172,7 +174,7 @@ export default function TableProperties() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
             <div>
-              <label style={labelSt}>Width</label>
+              <label style={labelSt}>{t("tableProperties.width")}</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -188,7 +190,7 @@ export default function TableProperties() {
               />
             </div>
             <div>
-              <label style={labelSt}>Height</label>
+              <label style={labelSt}>{t("tableProperties.height")}</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -208,7 +210,7 @@ export default function TableProperties() {
 
         <div>
           <label style={{ ...labelSt, marginBottom: "0.5rem" }}>
-            Rotation — {table.rotation}°
+            {t("tableProperties.rotation", { deg: table.rotation })}
           </label>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <input
@@ -247,7 +249,7 @@ export default function TableProperties() {
       <div style={sectionSt}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
           <div>
-            <label style={labelSt}>Capacity</label>
+            <label style={labelSt}>{t("tableProperties.capacity")}</label>
             <input
               type="text"
               inputMode="numeric"
@@ -263,7 +265,7 @@ export default function TableProperties() {
             />
           </div>
           <div>
-            <label style={labelSt}>Min Party</label>
+            <label style={labelSt}>{t("tableProperties.minParty")}</label>
             <input
               type="text"
               inputMode="numeric"
@@ -281,7 +283,7 @@ export default function TableProperties() {
         </div>
         {capacityWarning && (
           <p style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: "-0.25rem" }}>
-            Min party size exceeds capacity.
+            {t("tableProperties.capacityWarning")}
           </p>
         )}
       </div>
@@ -291,8 +293,8 @@ export default function TableProperties() {
       {/* Flags */}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {[
-          { id: "windowSeat", checked: table.isWindowSeat, label: "Window seat", onChange: (v: boolean) => update({ isWindowSeat: v }) },
-          { id: "isActive", checked: table.isActive, label: "Active (bookable)", onChange: (v: boolean) => update({ isActive: v }) },
+          { id: "windowSeat", checked: table.isWindowSeat, label: t("tableProperties.windowSeat"), onChange: (v: boolean) => update({ isWindowSeat: v }) },
+          { id: "isActive", checked: table.isActive, label: t("tableProperties.active"), onChange: (v: boolean) => update({ isActive: v }) },
         ].map(({ id, checked, label, onChange }) => (
           <label key={id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
             <input
@@ -311,13 +313,13 @@ export default function TableProperties() {
 
       {/* Notes */}
       <div>
-        <label style={labelSt}>Notes</label>
+        <label style={labelSt}>{t("tableProperties.notes")}</label>
         <textarea
           style={{ ...inputSt, resize: "none" }}
           rows={2}
           value={table.notes || ""}
           onChange={(e) => update({ notes: e.target.value })}
-          placeholder="e.g. near window, accessible"
+          placeholder={t("tableProperties.notesPlaceholder")}
         />
       </div>
 
@@ -325,7 +327,7 @@ export default function TableProperties() {
 
       {/* Photo */}
       <div>
-        <label style={labelSt}>Photo</label>
+        <label style={labelSt}>{t("tableProperties.photo")}</label>
         {table.imageUrl ? (
           <div style={{ position: "relative", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(24,22,15,0.14)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -334,7 +336,7 @@ export default function TableProperties() {
               onClick={() => update({ imageUrl: null })}
               style={{ position: "absolute", top: 6, right: 6, background: "rgba(24,22,15,0.75)", color: "#fff", border: "none", borderRadius: 4, fontSize: "0.7rem", padding: "0.2rem 0.45rem", cursor: "pointer", fontFamily: "inherit" }}
             >
-              Remove
+              {t("tableProperties.removePhoto")}
             </button>
           </div>
         ) : (
@@ -342,7 +344,7 @@ export default function TableProperties() {
             onClick={() => fileRef.current?.click()}
             style={{ width: "100%", padding: "0.75rem", background: "#fafaf8", border: "1px dashed rgba(24,22,15,0.2)", borderRadius: "6px", cursor: "pointer", fontSize: "0.8125rem", color: "#5c5248", fontFamily: "inherit" }}
           >
-            + Upload photo
+            {t("tableProperties.uploadPhoto")}
           </button>
         )}
         <input
@@ -364,7 +366,7 @@ export default function TableProperties() {
           }}
         />
         <p style={{ fontSize: "0.7rem", color: "#9a9088", marginTop: "0.35rem" }}>
-          Shown to guests when they tap this table.
+          {t("tableProperties.photoNote")}
         </p>
       </div>
     </div>

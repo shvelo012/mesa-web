@@ -5,6 +5,7 @@ import { Review } from "@/types";
 import { api } from "@/lib/api";
 import StarRating from "./StarRating";
 import ReviewForm from "./ReviewForm";
+import { useTranslation } from "react-i18next";
 
 interface ReviewListProps {
   reviews: Review[];
@@ -25,6 +26,7 @@ export default function ReviewList({
   canReview,
   onChanged,
 }: ReviewListProps) {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -71,17 +73,17 @@ export default function ReviewList({
             <div>
               <StarRating value={Math.round(avgStars)} readonly size={18} />
               <p style={{ fontSize: "0.8125rem", color: "#9a9088", marginTop: "0.2rem" }}>
-                {count} review{count !== 1 ? "s" : ""}
+                {t("reviews.totalReviews", { count })}
               </p>
             </div>
           </>
         ) : (
-          <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>No reviews yet</p>
+          <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>{t("reviews.noReviews")}</p>
         )}
         <div style={{ flex: 1 }} />
         {canReview && !myReview && !showForm && (
           <button onClick={() => setShowForm(true)} className="btn btn-primary btn-sm">
-            Write a review
+            {t("reviews.writeReview")}
           </button>
         )}
       </div>
@@ -89,7 +91,7 @@ export default function ReviewList({
       {/* Write form */}
       {showForm && (
         <div style={{ background: "#fff", border: "1px solid rgba(24,22,15,0.1)", borderRadius: "10px", padding: "1.25rem", marginBottom: "1.25rem" }}>
-          <h4 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#18160f", marginBottom: "1rem" }}>Your review</h4>
+          <h4 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#18160f", marginBottom: "1rem" }}>{t("reviews.writeReview")}</h4>
           <ReviewForm restaurantId={restaurantId} onSaved={handleSaved} onCancel={() => setShowForm(false)} />
         </div>
       )}
@@ -104,7 +106,7 @@ export default function ReviewList({
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
                 <div>
                   <span style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f" }}>{r.user?.name ?? "Guest"}</span>
-                  {r.edited && <span style={{ fontSize: "0.7rem", color: "#9a9088", marginLeft: "0.5rem" }}>(edited)</span>}
+                  {r.edited && <span style={{ fontSize: "0.7rem", color: "#9a9088", marginLeft: "0.5rem" }}>{t("reviews.edited")}</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", flexShrink: 0 }}>
                   <StarRating value={r.stars} readonly size={14} />
@@ -122,7 +124,7 @@ export default function ReviewList({
                     <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
                       {!r.edited && (
                         <button onClick={() => setEditingId(r.id)} className="btn btn-ghost btn-sm" style={{ fontSize: "0.75rem" }}>
-                          Edit
+                          {t("common.edit")}
                         </button>
                       )}
                       <button
@@ -131,7 +133,7 @@ export default function ReviewList({
                         className="btn btn-ghost btn-sm"
                         style={{ fontSize: "0.75rem", color: "#dc2626" }}
                       >
-                        {deleting === r.id ? "Deleting…" : "Delete"}
+                        {deleting === r.id ? t("common.loading") : t("reviews.deleteReview")}
                       </button>
                     </div>
                   )}

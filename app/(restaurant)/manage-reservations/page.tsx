@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useSSE } from "@/hooks/useSSE";
 import dynamic from "next/dynamic";
 import GuestProfileModal from "@/components/reservations/GuestProfileModal";
+import { useTranslation } from "react-i18next";
 
 const TimelineView = dynamic(() => import("@/components/reservations/TimelineView"), { ssr: false });
 const LiveFloorPanel = dynamic(() => import("@/components/reservations/LiveFloorPanel"), { ssr: false });
@@ -69,6 +70,7 @@ function getOverlappingPending(reservations: ReservationItem[], target: Reservat
 }
 
 function ReservationsPageInner() {
+  const { t } = useTranslation();
   const { user, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
@@ -330,7 +332,7 @@ function ReservationsPageInner() {
             onMouseEnter={e => (e.currentTarget.style.color = "#18160f")}
             onMouseLeave={e => (e.currentTarget.style.color = "#9a9088")}
           >
-            ← Dashboard
+            {t("nav.backToDashboard")}
           </Link>
           <div style={{ width: "1px", height: "16px", background: "rgba(24,22,15,0.1)" }} />
           <span style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em" }}>mesa</span>
@@ -344,7 +346,7 @@ function ReservationsPageInner() {
             onClick={() => setShowFloorPanel((v) => !v)}
             style={{ padding: "0.375rem 0.625rem", fontSize: "0.8125rem", border: "1px solid rgba(24,22,15,0.1)", borderRadius: "6px", cursor: "pointer", background: showFloorPanel ? "#fef2ec" : "#f5f3ef", color: showFloorPanel ? "#c4410c" : "#5c5248", fontFamily: "inherit" }}
           >
-            {showFloorPanel ? "Hide floor" : "Live floor"}
+            {showFloorPanel ? t("nav.hideFloor") : t("nav.liveFloor")}
           </button>
           <button
             onClick={() => { setNewCount(0); fetchReservations(false); }}
@@ -359,7 +361,7 @@ function ReservationsPageInner() {
           </button>
           <Link href="/new-booking" style={{ textDecoration: "none" }}>
             <button style={{ padding: "0.375rem 0.875rem", fontSize: "0.8125rem", fontWeight: 600, border: "none", borderRadius: "6px", cursor: "pointer", background: "#c4410c", color: "#fff", fontFamily: "inherit" }}>
-              + New booking
+              {t("nav.newBooking")}
             </button>
           </Link>
         </div>
@@ -371,7 +373,7 @@ function ReservationsPageInner() {
           {/* Header + controls */}
           <div className="anim-1" style={{ opacity: 0, marginBottom: "1rem" }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.875rem" }}>
-              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", margin: 0 }}>Reservations</h1>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", margin: 0 }}>{t("manageReservations.title")}</h1>
               <div style={{ display: "flex", gap: "0.375rem" }}>
                 {(["list", "kanban", "timeline"] as ViewMode[]).map((v) => (
                   <button
@@ -379,7 +381,7 @@ function ReservationsPageInner() {
                     onClick={() => changeView(v)}
                     style={{ padding: "0.35rem 0.625rem", fontSize: "0.8125rem", border: "1px solid", borderRadius: "6px", cursor: "pointer", background: viewMode === v ? "#18160f" : "#fff", borderColor: viewMode === v ? "#18160f" : "rgba(24,22,15,0.12)", color: viewMode === v ? "#fff" : "#5c5248", fontFamily: "inherit", textTransform: "capitalize" }}
                   >
-                    {v}
+                    {t(`manageReservations.views.${v}`)}
                   </button>
                 ))}
               </div>
@@ -389,7 +391,7 @@ function ReservationsPageInner() {
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
               <input
                 type="search"
-                placeholder="Search guest name, email, phone…"
+                placeholder={t("manageReservations.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="input"
@@ -407,16 +409,16 @@ function ReservationsPageInner() {
                   onClick={() => changeDate("")}
                   style={{ fontSize: "0.8125rem", color: "#9a9088", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
                 >
-                  Clear date
+                  {t("manageReservations.clearDate")}
                 </button>
               )}
 
               {/* Tabs */}
               <div style={{ marginLeft: "auto", display: "flex", gap: "0.25rem" }}>
-                {(["PENDING", "CONFIRMED", "ALL", "PAST", "WAITLIST"] as Tab[]).map((t) => (
+                {(["PENDING", "CONFIRMED", "ALL", "PAST", "WAITLIST"] as Tab[]).map((tabKey) => (
                   <button
-                    key={t}
-                    onClick={() => changeTab(t)}
+                    key={tabKey}
+                    onClick={() => changeTab(tabKey)}
                     style={{
                       padding: "0.35rem 0.75rem",
                       fontSize: "0.8125rem",
@@ -425,27 +427,27 @@ function ReservationsPageInner() {
                       border: "1px solid",
                       borderRadius: "6px",
                       cursor: "pointer",
-                      background: tab === t ? "#c4410c" : "#fff",
-                      borderColor: tab === t ? "#c4410c" : "rgba(24,22,15,0.12)",
-                      color: tab === t ? "#fff" : "#5c5248",
+                      background: tab === tabKey ? "#c4410c" : "#fff",
+                      borderColor: tab === tabKey ? "#c4410c" : "rgba(24,22,15,0.12)",
+                      color: tab === tabKey ? "#fff" : "#5c5248",
                       transition: "all 0.15s",
                       display: "flex",
                       alignItems: "center",
                       gap: "0.35rem",
                     }}
                   >
-                    {t === "WAITLIST" ? "Waitlist" : t === "ALL" ? "All" : t === "PAST" ? "Past" : t.charAt(0) + t.slice(1).toLowerCase()}
-                    {t === "PENDING" && pendingCount > 0 && (
+                    {t(`manageReservations.tabs.${tabKey}`)}
+                    {tabKey === "PENDING" && pendingCount > 0 && (
                       <span style={{ fontSize: "0.6rem", fontWeight: 700, background: tab === "PENDING" ? "rgba(255,255,255,0.3)" : "#c4410c", color: "#fff", padding: "0.05rem 0.3rem", borderRadius: "999px" }}>
                         {pendingCount}
                       </span>
                     )}
-                    {t === "WAITLIST" && waitingCount > 0 && (
+                    {tabKey === "WAITLIST" && waitingCount > 0 && (
                       <span style={{ fontSize: "0.6rem", fontWeight: 700, background: tab === "WAITLIST" ? "rgba(255,255,255,0.3)" : "#c4410c", color: "#fff", padding: "0.05rem 0.3rem", borderRadius: "999px" }}>
                         {waitingCount}
                       </span>
                     )}
-                    {t === "PENDING" && newCount > 0 && tab !== "PENDING" && (
+                    {tabKey === "PENDING" && newCount > 0 && tab !== "PENDING" && (
                       <span style={{ fontSize: "0.6rem", fontWeight: 700, background: "#dc2626", color: "#fff", padding: "0.05rem 0.3rem", borderRadius: "999px" }}>
                         +{newCount}
                       </span>
@@ -462,7 +464,7 @@ function ReservationsPageInner() {
               onClick={() => { changeTab("PENDING"); setNewCount(0); }}
               style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "#fffbeb", border: "1px solid rgba(180,83,9,0.3)", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "#b45309" }}
             >
-              ⚡ {newCount} new reservation request{newCount > 1 ? "s" : ""} — click to review
+              {t("manageReservations.newArrivals", { count: newCount })}
             </div>
           )}
 
@@ -470,7 +472,7 @@ function ReservationsPageInner() {
           {selectedIds.size > 0 && (
             <div style={{ marginBottom: "0.75rem", padding: "0.625rem 1rem", background: "#18160f", borderRadius: "8px", display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <span style={{ fontSize: "0.875rem", color: "#fff", fontWeight: 500 }}>
-                {selectedIds.size} selected
+                {t("manageReservations.selected", { count: selectedIds.size })}
               </span>
               <div style={{ flex: 1 }} />
               {can("RESERVATIONS_WRITE") && (
@@ -479,7 +481,7 @@ function ReservationsPageInner() {
                   disabled={bulkLoading}
                   style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#fef2f2", color: "#dc2626", opacity: bulkLoading ? 0.7 : 1 }}
                 >
-                  {bulkLoading ? "…" : "Cancel selected"}
+                  {bulkLoading ? "…" : t("manageReservations.cancelSelected")}
                 </button>
               )}
               <button
@@ -506,14 +508,14 @@ function ReservationsPageInner() {
               waitlist.length === 0 ? (
                 <div style={{ padding: "3rem 2rem", textAlign: "center" }}>
                   <div style={{ fontSize: "2rem", marginBottom: "0.75rem", opacity: 0.25 }}>○</div>
-                  <p style={{ fontSize: "1rem", fontWeight: 600, color: "#18160f", marginBottom: "0.25rem" }}>No waitlist entries</p>
-                  <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>Guests added when tables are full will appear here.</p>
+                  <p style={{ fontSize: "1rem", fontWeight: 600, color: "#18160f", marginBottom: "0.25rem" }}>{t("manageReservations.noWaitlist")}</p>
+                  <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>{t("manageReservations.noWaitlistSub")}</p>
                 </div>
               ) : (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "40px 1.4fr 1fr 80px 110px 160px", gap: "1rem", padding: "0.625rem 1.5rem", background: "#fafaf8", borderBottom: "1px solid rgba(24,22,15,0.07)" }}>
-                    {["#", "Guest", "Date", "Party", "Status", "Actions"].map((h) => (
-                      <span key={h} style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</span>
+                    {(["position", "guest", "date", "party", "status", "actions"] as const).map((hKey) => (
+                      <span key={hKey} style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t(`manageReservations.waitlistHeaders.${hKey}`)}</span>
                     ))}
                   </div>
                   {waitlist.map((w) => (
@@ -540,7 +542,7 @@ function ReservationsPageInner() {
                             onClick={() => handleWaitlistNotify(w.id)}
                             style={{ padding: "0.35rem 0.625rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#eff6ff", color: "#2563eb" }}
                           >
-                            Notify
+                            {t("manageReservations.notify")}
                           </button>
                         )}
                         {(w.status === "WAITING" || w.status === "NOTIFIED") && (
@@ -548,7 +550,7 @@ function ReservationsPageInner() {
                             onClick={() => handleWaitlistCancel(w.id)}
                             style={{ padding: "0.35rem 0.625rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: "pointer", background: "#f5f3ef", color: "#9a9088" }}
                           >
-                            Remove
+                            {t("manageReservations.remove")}
                           </button>
                         )}
                       </div>
@@ -570,10 +572,10 @@ function ReservationsPageInner() {
                   {tab === "PENDING" ? "✓" : "○"}
                 </div>
                 <p style={{ fontSize: "1rem", fontWeight: 600, color: "#18160f", marginBottom: "0.375rem" }}>
-                  {tab === "PENDING" ? "All caught up" : "Nothing here"}
+                  {tab === "PENDING" ? t("manageReservations.allCaughtUp") : t("manageReservations.nothingHere")}
                 </p>
                 <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>
-                  {tab === "PENDING" ? "No pending reservation requests right now." : "No reservations match this filter."}
+                  {tab === "PENDING" ? t("manageReservations.noPending") : t("manageReservations.noMatch")}
                 </p>
               </div>
             ) : (
@@ -588,8 +590,8 @@ function ReservationsPageInner() {
                       style={{ cursor: "pointer" }}
                     />
                   </div>
-                  {["Guest", "Date & Time", "Table", "Party", "Status", "Actions"].map((h) => (
-                    <span key={h} style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</span>
+                  {(["guest", "dateTime", "table", "party", "status", "actions"] as const).map((hKey) => (
+                    <span key={hKey} style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t(`manageReservations.headers.${hKey}`)}</span>
                   ))}
                 </div>
 
@@ -701,14 +703,14 @@ function ReservationsPageInner() {
                               title={hasConfirmedConflict ? "Table already confirmed for this time" : undefined}
                               style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: (busy || hasConfirmedConflict) ? "not-allowed" : "pointer", background: "#16a34a", color: "#fff", opacity: (actionLoading === r.id + "CONFIRMED" || hasConfirmedConflict) ? 0.4 : 1 }}
                             >
-                              {actionLoading === r.id + "CONFIRMED" ? "…" : "Accept"}
+                              {actionLoading === r.id + "CONFIRMED" ? "…" : t("manageReservations.accept")}
                             </button>
                             <button
                               onClick={() => handleStatus(r.id, "CANCELLED")}
                               disabled={busy}
                               style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#fef2f2", color: "#dc2626", opacity: actionLoading === r.id + "CANCELLED" ? 0.65 : 1 }}
                             >
-                              {actionLoading === r.id + "CANCELLED" ? "…" : "Decline"}
+                              {actionLoading === r.id + "CANCELLED" ? "…" : t("manageReservations.decline")}
                             </button>
                           </>
                         )}
@@ -719,14 +721,14 @@ function ReservationsPageInner() {
                               disabled={busy}
                               style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#ede9fe", color: "#7c3aed", opacity: actionLoading === r.id + "SEATED" ? 0.65 : 1 }}
                             >
-                              {actionLoading === r.id + "SEATED" ? "…" : "Seat"}
+                              {actionLoading === r.id + "SEATED" ? "…" : t("manageReservations.seat")}
                             </button>
                             <button
                               onClick={() => handleStatus(r.id, "CANCELLED")}
                               disabled={busy}
                               style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#f5f3ef", color: "#9a9088", opacity: actionLoading === r.id + "CANCELLED" ? 0.65 : 1 }}
                             >
-                              {actionLoading === r.id + "CANCELLED" ? "…" : "Cancel"}
+                              {actionLoading === r.id + "CANCELLED" ? "…" : t("manageReservations.cancelAction")}
                             </button>
                           </>
                         )}
@@ -737,14 +739,14 @@ function ReservationsPageInner() {
                               disabled={busy}
                               style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#eff6ff", color: "#2563eb", opacity: actionLoading === r.id + "COMPLETED" ? 0.65 : 1 }}
                             >
-                              {actionLoading === r.id + "COMPLETED" ? "…" : "Complete"}
+                              {actionLoading === r.id + "COMPLETED" ? "…" : t("manageReservations.complete")}
                             </button>
                             <button
                               onClick={() => handleStatus(r.id, "CANCELLED")}
                               disabled={busy}
                               style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, fontFamily: "inherit", border: "none", borderRadius: "6px", cursor: busy ? "not-allowed" : "pointer", background: "#f5f3ef", color: "#9a9088", opacity: actionLoading === r.id + "CANCELLED" ? 0.65 : 1 }}
                             >
-                              {actionLoading === r.id + "CANCELLED" ? "…" : "Cancel"}
+                              {actionLoading === r.id + "CANCELLED" ? "…" : t("manageReservations.cancelAction")}
                             </button>
                           </>
                         )}
@@ -788,12 +790,12 @@ function ReservationsPageInner() {
           <div style={{ background: "#fff", borderRadius: "12px", width: "100%", maxWidth: "520px", maxHeight: "80vh", overflow: "auto", boxShadow: "0 24px 80px rgba(0,0,0,0.22)" }}>
             <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(24,22,15,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
               <div>
-                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f", margin: 0 }}>Overlapping Requests</h3>
+                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#18160f", margin: 0 }}>{t("manageReservations.overlap.title")}</h3>
                 <p style={{ fontSize: "0.75rem", color: "#9a9088", margin: "0.15rem 0 0" }}>
                   Table {overlapModal.target.table?.label} · {overlapModal.target.date} ·{" "}
                   {overlapModal.group.some((r) => r.status === "CONFIRMED")
-                    ? "Table already confirmed for this time slot"
-                    : "Accepting one declines the others"}
+                    ? t("manageReservations.overlap.alreadyConfirmed")
+                    : t("manageReservations.overlap.acceptingDeclines")}
                 </p>
               </div>
               <button onClick={() => setOverlapModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9a9088", fontSize: "1.375rem", lineHeight: 1 }}>×</button>

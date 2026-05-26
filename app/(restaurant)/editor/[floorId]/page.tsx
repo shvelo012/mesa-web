@@ -10,6 +10,7 @@ import { Floor } from "@/types";
 import Toolbar from "@/components/canvas/Toolbar";
 import TableProperties from "@/components/canvas/TableProperties";
 import LayerPanel from "@/components/canvas/LayerPanel";
+import { useTranslation } from "react-i18next";
 
 const FloorCanvas = dynamic(() => import("@/components/canvas/FloorCanvas"), { ssr: false });
 const FloorViewCanvas = dynamic(() => import("@/components/canvas/FloorViewCanvas"), { ssr: false });
@@ -24,6 +25,7 @@ const TOOL_TIPS: Record<string, string> = {
 const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export default function EditorPage() {
+  const { t } = useTranslation();
   const { floorId } = useParams<{ floorId: string }>();
   const { user, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
@@ -99,7 +101,7 @@ export default function EditorPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, []); // eslint-disable-line
 
   async function handleSave(): Promise<boolean> {
     const { tables, walls } = useCanvasStore.getState();
@@ -107,11 +109,11 @@ export default function EditorPage() {
     try {
       await api.post(`/floors/${floorId}/layout`, { tables, walls });
       markClean();
-      setSaveMsg("Saved");
+      setSaveMsg("saved");
       setTimeout(() => setSaveMsg(""), 2000);
       return true;
     } catch {
-      setSaveMsg("Save failed");
+      setSaveMsg("failed");
       return false;
     } finally {
       setSaving(false);
@@ -167,7 +169,7 @@ export default function EditorPage() {
               Unsaved changes
             </h3>
             <p style={{ fontSize: "0.875rem", color: "#5c5248", marginBottom: "1.25rem", lineHeight: 1.5 }}>
-              You have unsaved changes to this floor layout. What would you like to do?
+              {t("editor.unsavedChanges")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <button
@@ -175,7 +177,7 @@ export default function EditorPage() {
                 disabled={saving}
                 style={{ padding: "0.625rem 1rem", background: "#c4410c", color: "#fff", border: "none", borderRadius: "8px", fontFamily: "inherit", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer" }}
               >
-                {saving ? "Saving…" : "Save & Leave"}
+                {saving ? t("editor.saving") : "Save & Leave"}
               </button>
               <button
                 onClick={() => router.push("/dashboard")}
@@ -213,7 +215,7 @@ export default function EditorPage() {
           onMouseEnter={e => (e.currentTarget.style.color = "#18160f")}
           onMouseLeave={e => (e.currentTarget.style.color = "#9a9088")}
         >
-          ← Dashboard
+          {t("editor.backToDashboard")}
         </button>
 
         <div style={{ width: "1px", height: "18px", background: "rgba(24,22,15,0.1)" }} />
@@ -259,16 +261,21 @@ export default function EditorPage() {
           {previewMode ? "✓ Preview" : "Preview"}
         </button>
 
-        {saveMsg && (
-          <span style={{ fontSize: "0.875rem", fontWeight: 500, color: saveMsg === "Saved" ? "#16a34a" : "#dc2626" }}>
-            {saveMsg === "Saved" ? "✓ Saved" : "⚠ Save failed"}
+        {saveMsg === "saved" && (
+          <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#16a34a" }}>
+            ✓ {t("editor.saved")}
+          </span>
+        )}
+        {saveMsg === "failed" && (
+          <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#dc2626" }}>
+            ⚠ {t("editor.failedSave")}
           </span>
         )}
         {!saveMsg && autoSaveStatus === "pending" && (
           <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>Unsaved changes</span>
         )}
         {!saveMsg && autoSaveStatus === "saving" && (
-          <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>Autosaving…</span>
+          <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>{t("editor.saving")}</span>
         )}
         {!saveMsg && autoSaveStatus === "saved" && (
           <span style={{ fontSize: "0.8125rem", color: "#16a34a", fontWeight: 500 }}>✓ Autosaved</span>

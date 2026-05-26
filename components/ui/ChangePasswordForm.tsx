@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
+import { useTranslation } from "react-i18next";
 
 export default function ChangePasswordForm() {
+  const { t } = useTranslation();
   const { changePassword } = useAuthStore();
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [saving, setSaving] = useState(false);
@@ -17,11 +19,11 @@ export default function ChangePasswordForm() {
     setError("");
     setSuccess(false);
     if (form.newPassword !== form.confirmPassword) {
-      setError("New passwords do not match");
+      setError(t("changePassword.mismatch"));
       return;
     }
     if (form.newPassword.length < 8) {
-      setError("New password must be at least 8 characters");
+      setError(t("changePassword.tooShort"));
       return;
     }
     setSaving(true);
@@ -32,7 +34,7 @@ export default function ChangePasswordForm() {
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setError(msg || "Failed to change password");
+      setError(msg || t("changePassword.failed"));
     } finally {
       setSaving(false);
     }
@@ -47,23 +49,23 @@ export default function ChangePasswordForm() {
       )}
       {success && (
         <div style={{ padding: "0.75rem 1rem", background: "#f0fdf4", border: "1px solid rgba(22,163,74,0.2)", borderRadius: "8px", color: "#16a34a", fontSize: "0.875rem" }}>
-          Password changed successfully.
+          {t("changePassword.success")}
         </div>
       )}
       <div>
-        <label className="label">Current password</label>
+        <label className="label">{t("changePassword.currentPassword")}</label>
         <input
           type="password"
           required
           value={form.currentPassword}
           onChange={(e) => set("currentPassword", e.target.value)}
           className="input"
-          placeholder="Your current password"
+          placeholder={t("changePassword.currentPasswordPlaceholder")}
           autoComplete="current-password"
         />
       </div>
       <div>
-        <label className="label">New password</label>
+        <label className="label">{t("changePassword.newPassword")}</label>
         <input
           type="password"
           required
@@ -71,25 +73,25 @@ export default function ChangePasswordForm() {
           value={form.newPassword}
           onChange={(e) => set("newPassword", e.target.value)}
           className="input"
-          placeholder="Min. 8 characters"
+          placeholder={t("changePassword.newPasswordPlaceholder")}
           autoComplete="new-password"
         />
       </div>
       <div>
-        <label className="label">Confirm new password</label>
+        <label className="label">{t("changePassword.confirmPassword")}</label>
         <input
           type="password"
           required
           value={form.confirmPassword}
           onChange={(e) => set("confirmPassword", e.target.value)}
           className="input"
-          placeholder="Repeat new password"
+          placeholder={t("changePassword.confirmPasswordPlaceholder")}
           autoComplete="new-password"
         />
       </div>
       <div>
         <button type="submit" disabled={saving} className="btn btn-primary btn-md">
-          {saving ? "Saving…" : "Change password"}
+          {saving ? t("changePassword.saving") : t("changePassword.save")}
         </button>
       </div>
     </form>

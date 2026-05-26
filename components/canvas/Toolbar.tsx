@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useCanvasStore, ToolMode } from "@/store/canvas.store";
 import { MousePointer2, Square, Minus, Eraser, Save, Loader2, Undo2, Redo2, Keyboard } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-const TOOLS: { id: ToolMode; label: string; icon: React.ReactNode; shortcut: string }[] = [
-  { id: "select", label: "Select", icon: <MousePointer2 size={14} />, shortcut: "S" },
-  { id: "table", label: "Add Table", icon: <Square size={14} />, shortcut: "T" },
-  { id: "wall", label: "Draw Wall", icon: <Minus size={14} />, shortcut: "W" },
-  { id: "erase", label: "Erase", icon: <Eraser size={14} />, shortcut: "E" },
+const TOOL_DEFS: { id: ToolMode; icon: React.ReactNode; shortcut: string; tKey: string }[] = [
+  { id: "select", icon: <MousePointer2 size={14} />, shortcut: "S", tKey: "toolbar.select" },
+  { id: "table",  icon: <Square size={14} />,        shortcut: "T", tKey: "toolbar.addTable" },
+  { id: "wall",   icon: <Minus size={14} />,         shortcut: "W", tKey: "toolbar.drawWall" },
+  { id: "erase",  icon: <Eraser size={14} />,        shortcut: "E", tKey: "toolbar.erase" },
 ];
 
 const SHORTCUTS = [
@@ -29,8 +30,11 @@ interface Props {
 }
 
 export default function Toolbar({ onSave, saving }: Props) {
+  const { t } = useTranslation();
   const { tool, setTool, isDirty, tables, past, future, undo, redo } = useCanvasStore();
   const [showShortcuts, setShowShortcuts] = useState(false);
+
+  const TOOLS = TOOL_DEFS.map((td) => ({ ...td, label: t(td.tKey as never) }));
 
   return (
     <div
@@ -124,7 +128,7 @@ export default function Toolbar({ onSave, saving }: Props) {
       </button>
 
       <span style={{ fontSize: "0.75rem", color: "#9a9088", marginLeft: "0.25rem" }}>
-        {tables.length} table{tables.length !== 1 ? "s" : ""}
+        {t("toolbar.tables", { count: tables.length })}
       </span>
 
       <div style={{ flex: 1 }} />
@@ -166,7 +170,7 @@ export default function Toolbar({ onSave, saving }: Props) {
           }}
         >
           <p style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.625rem" }}>
-            Keyboard Shortcuts
+            {t("toolbar.shortcuts")}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
             {SHORTCUTS.map(({ key, desc }) => (
@@ -204,7 +208,7 @@ export default function Toolbar({ onSave, saving }: Props) {
         }}
       >
         {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}
-        Save
+        {saving ? t("editor.saving") : t("toolbar.save")}
       </button>
     </div>
   );

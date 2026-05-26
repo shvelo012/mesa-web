@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 type TableLive = {
   id: string;
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export default function LiveFloorPanel({ date, onTableClick }: Props) {
+  const { t } = useTranslation();
   const [floors, setFloors] = useState<FloorLive[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -118,7 +120,7 @@ export default function LiveFloorPanel({ date, onTableClick }: Props) {
 
         {floors.length === 0 && (
           <p style={{ fontSize: "0.875rem", color: "#9a9088", textAlign: "center", padding: "1rem 0" }}>
-            No floor sections configured
+            {t("liveFloor.noFloors")}
           </p>
         )}
       </div>

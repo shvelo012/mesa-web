@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Menu } from "@/types";
 import { api } from "@/lib/api";
 import { MENU_PRESETS, LAYOUT_OPTIONS, MenuPreset, LayoutOption } from "@/lib/menu-presets";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   onClose: () => void;
@@ -13,6 +14,7 @@ interface Props {
 type Step = "type" | "photo-ready" | "structured-options";
 
 export default function CreateMenuModal({ onClose, onCreated }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("type");
   const [menuName, setMenuName] = useState("");
   const [menuType, setMenuType] = useState<"PHOTO" | "STRUCTURED" | "">("");
@@ -63,7 +65,7 @@ export default function CreateMenuModal({ onClose, onCreated }: Props) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
           <div>
-            <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", margin: 0 }}>Create menu</h2>
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", margin: 0 }}>{t("menu.createModal.title")}</h2>
             <div style={{ display: "flex", gap: "0.25rem", marginTop: "0.5rem" }}>
               {(["type", "structured-options", "photo-ready"] as Step[]).map((s, i) => (
                 <div key={s} style={{ height: "3px", width: "32px", borderRadius: "2px", background: (step === "type" && i === 0) || (step !== "type" && i > 0) ? "#c4410c" : "#f0ede8", transition: "background 0.2s" }} />
@@ -81,11 +83,11 @@ export default function CreateMenuModal({ onClose, onCreated }: Props) {
         {step === "type" && (
           <form onSubmit={handleTypeNext} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div>
-              <label className="label">Menu name</label>
-              <input required value={menuName} onChange={(e) => setMenuName(e.target.value)} className="input" placeholder="e.g. Dinner Menu, Drinks…" autoFocus />
+              <label className="label">{t("menu.createModal.nameLabel")}</label>
+              <input required value={menuName} onChange={(e) => setMenuName(e.target.value)} className="input" placeholder={t("menu.createModal.namePlaceholder")} autoFocus />
             </div>
             <div>
-              <label className="label">Menu type</label>
+              <label className="label">{t("menu.createModal.typeLabel")}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "0.5rem" }}>
                 {(["PHOTO", "STRUCTURED"] as const).map((type) => (
                   <button
@@ -105,7 +107,7 @@ export default function CreateMenuModal({ onClose, onCreated }: Props) {
                   >
                     <div style={{ fontSize: "1.5rem", marginBottom: "0.375rem" }}>{type === "PHOTO" ? "📷" : "📋"}</div>
                     <div style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#18160f", marginBottom: "0.25rem" }}>
-                      {type === "PHOTO" ? "Photo menu" : "Structured menu"}
+                      {type === "PHOTO" ? t("menu.createModal.typePhoto") : t("menu.createModal.typeStructured")}
                     </div>
                     <div style={{ fontSize: "0.8125rem", color: "#5c5248", lineHeight: 1.4 }}>
                       {type === "PHOTO" ? "Upload photos of your menu" : "Add dishes grouped by category"}
@@ -116,7 +118,7 @@ export default function CreateMenuModal({ onClose, onCreated }: Props) {
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button type="submit" disabled={!menuName.trim() || !menuType} className="btn btn-primary btn-md" style={{ flex: 1 }}>Next →</button>
-              <button type="button" onClick={onClose} className="btn btn-ghost btn-md">Cancel</button>
+              <button type="button" onClick={onClose} className="btn btn-ghost btn-md">{t("menu.createModal.cancel")}</button>
             </div>
           </form>
         )}
@@ -130,7 +132,9 @@ export default function CreateMenuModal({ onClose, onCreated }: Props) {
               <p style={{ fontSize: "0.875rem", color: "#5c5248", margin: 0 }}>Create the menu and upload your images on the next screen.</p>
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button onClick={handleCreate} disabled={saving} className="btn btn-primary btn-md" style={{ flex: 1 }}>{saving ? "Creating…" : "Create menu"}</button>
+              <button onClick={handleCreate} disabled={saving} className="btn btn-primary btn-md" style={{ flex: 1 }}>
+                {saving ? t("menu.createModal.creating") : t("menu.createModal.create")}
+              </button>
               <button onClick={() => setStep("type")} className="btn btn-ghost btn-md">Back</button>
             </div>
           </div>
@@ -166,7 +170,7 @@ export default function CreateMenuModal({ onClose, onCreated }: Props) {
             </div>
 
             <div>
-              <label className="label">Display style</label>
+              <label className="label">{t("menu.createModal.layoutLabel")}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                 {LAYOUT_OPTIONS.map((layout) => (
                   <button
@@ -192,7 +196,9 @@ export default function CreateMenuModal({ onClose, onCreated }: Props) {
             </div>
 
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button onClick={handleCreate} disabled={saving} className="btn btn-primary btn-md" style={{ flex: 1 }}>{saving ? "Creating…" : "Create menu"}</button>
+              <button onClick={handleCreate} disabled={saving} className="btn btn-primary btn-md" style={{ flex: 1 }}>
+                {saving ? t("menu.createModal.creating") : t("menu.createModal.create")}
+              </button>
               <button onClick={() => setStep("type")} className="btn btn-ghost btn-md">Back</button>
             </div>
           </div>

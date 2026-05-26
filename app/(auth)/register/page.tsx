@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -29,7 +32,7 @@ export default function RegisterPage() {
       router.push(`/verify-email/pending?email=${encodeURIComponent(form.email)}`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setError(msg || "Registration failed");
+      setError(msg || t("auth.register.registrationFailed"));
     } finally {
       setLoading(false);
     }
@@ -37,10 +40,11 @@ export default function RegisterPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f5f3ef", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "1.25rem 1.5rem" }}>
+      <div style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Link href="/" style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", textDecoration: "none", letterSpacing: "-0.02em" }}>
           mesa
         </Link>
+        <LanguageSwitcher />
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem 1rem" }}>
@@ -48,10 +52,10 @@ export default function RegisterPage() {
 
           <div style={{ marginBottom: "2rem" }}>
             <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.375rem" }}>
-              Create your account
+              {t("auth.register.title")}
             </h1>
             <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>
-              Join thousands discovering great dining
+              {t("auth.register.subtitle")}
             </p>
           </div>
 
@@ -63,11 +67,11 @@ export default function RegisterPage() {
 
           {/* Role toggle */}
           <div style={{ marginBottom: "1.5rem" }}>
-            <label className="label" style={{ marginBottom: "0.625rem" }}>I want to</label>
+            <label className="label" style={{ marginBottom: "0.625rem" }}>{t("auth.register.iWantTo")}</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
               {([
-                { value: "USER", label: "Find & book tables", icon: "🍽️" },
-                { value: "RESTAURANT_OWNER", label: "List my restaurant", icon: "🏪" },
+                { value: "USER", label: t("auth.register.findAndBook"), icon: "🍽️" },
+                { value: "RESTAURANT_OWNER", label: t("auth.register.listMyRestaurant"), icon: "🏪" },
               ] as const).map(({ value, label, icon }) => (
                 <button
                   key={value}
@@ -97,16 +101,16 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.125rem" }}>
             <div>
-              <label className="label">Full name</label>
-              <input required value={form.name} onChange={(e) => set("name", e.target.value)} className="input" placeholder="Your name" />
+              <label className="label">{t("auth.register.fullName")}</label>
+              <input required value={form.name} onChange={(e) => set("name", e.target.value)} className="input" placeholder={t("auth.register.namePlaceholder")} />
             </div>
             <div>
-              <label className="label">Email address</label>
-              <input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} className="input" placeholder="you@example.com" />
+              <label className="label">{t("auth.register.emailLabel")}</label>
+              <input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} className="input" placeholder={t("auth.register.emailPlaceholder")} />
             </div>
             <div>
-              <label className="label">Password</label>
-              <input type="password" required minLength={8} value={form.password} onChange={(e) => set("password", e.target.value)} className="input" placeholder="Min. 8 characters" />
+              <label className="label">{t("auth.register.passwordLabel")}</label>
+              <input type="password" required minLength={8} value={form.password} onChange={(e) => set("password", e.target.value)} className="input" placeholder={t("auth.register.passwordPlaceholder")} />
             </div>
             {/* Privacy policy consent */}
             <label style={{ display: "flex", alignItems: "flex-start", gap: "0.625rem", cursor: "pointer" }}>
@@ -118,22 +122,22 @@ export default function RegisterPage() {
                 style={{ marginTop: "2px", accentColor: "#c4410c", width: "15px", height: "15px", flexShrink: 0, cursor: "pointer" }}
               />
               <span style={{ fontSize: "0.8125rem", color: "#5c5248", lineHeight: 1.5 }}>
-                I have read and agree to the{" "}
+                {t("auth.register.privacyConsent")}{" "}
                 <Link href="/privacy-policy" target="_blank" style={{ color: "#c4410c", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: "2px" }}>
-                  Privacy Policy
+                  {t("auth.register.privacyPolicy")}
                 </Link>
               </span>
             </label>
 
             <button type="submit" className="btn btn-primary btn-md" disabled={loading || !agreedToPrivacy} style={{ width: "100%", marginTop: "0.375rem" }}>
-              {loading ? "Creating account…" : "Create account"}
+              {loading ? t("auth.register.creatingAccount") : t("auth.register.createAccount")}
             </button>
           </form>
 
           <div style={{ marginTop: "1.75rem", paddingTop: "1.75rem", borderTop: "1px solid rgba(24,22,15,0.08)", textAlign: "center" }}>
             <p style={{ fontSize: "0.9375rem", color: "#5c5248" }}>
-              Already have an account?{" "}
-              <Link href="/login" style={{ color: "#c4410c", fontWeight: 600, textDecoration: "none" }}>Sign in</Link>
+              {t("auth.register.hasAccount")}{" "}
+              <Link href="/login" style={{ color: "#c4410c", fontWeight: 600, textDecoration: "none" }}>{t("auth.register.signIn")}</Link>
             </p>
           </div>
         </div>

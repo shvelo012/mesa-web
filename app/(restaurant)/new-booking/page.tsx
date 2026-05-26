@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { Floor, Restaurant, TableItem } from "@/types";
+import { useTranslation } from "react-i18next";
 
 const FloorViewCanvas = dynamic(
   () => import("@/components/canvas/FloorViewCanvas"),
@@ -31,6 +32,7 @@ function halfHourSlots(open: string, close: string): string[] {
 }
 
 function Legend() {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -42,14 +44,14 @@ function Legend() {
       }}
     >
       {[
-        { color: "#dcfce7", border: "#a8a09a", label: "Available" },
-        { color: "#dbeafe", border: "#a8a09a", label: "Window seat" },
-        { color: "#fde8df", border: "#c4410c", label: "Selected" },
-        { color: "#e5e2dd", border: "#c8c4be", label: "Booked" },
-        { color: "#f0ede8", border: "#c8c4be", label: "Too small" },
+        { color: "#dcfce7", border: "#a8a09a", labelKey: "newBooking.legend.available" },
+        { color: "#dbeafe", border: "#a8a09a", labelKey: "newBooking.legend.windowSeat" },
+        { color: "#fde8df", border: "#c4410c", labelKey: "newBooking.legend.selected" },
+        { color: "#e5e2dd", border: "#c8c4be", labelKey: "newBooking.legend.booked" },
+        { color: "#f0ede8", border: "#c8c4be", labelKey: "newBooking.legend.tooSmall" },
       ].map((item) => (
         <span
-          key={item.label}
+          key={item.labelKey}
           style={{
             display: "flex",
             alignItems: "center",
@@ -69,7 +71,7 @@ function Legend() {
               flexShrink: 0,
             }}
           />
-          {item.label}
+          {t(item.labelKey)}
         </span>
       ))}
     </div>
@@ -77,6 +79,7 @@ function Legend() {
 }
 
 export default function NewBookingPage() {
+  const { t } = useTranslation();
   const { user, _hasHydrated, can } = useAuthStore();
   const router = useRouter();
 
@@ -144,8 +147,6 @@ export default function NewBookingPage() {
       .catch(() => setLoading(false));
   }, [user, _hasHydrated, router]);
 
-  // Fetch availability whenever date is set (bookings shown)
-  // and re-fetch when time window is complete (occupied tables marked)
   const fetchAvailability = useCallback(
     async (d: string, st?: string) => {
       if (!d) return;
@@ -172,18 +173,17 @@ export default function NewBookingPage() {
           { startTime: string }[]
         > = {};
         for (const fl of data.floors) {
-          for (const t of fl.tables) {
-            if (!t.available) booked.add(t.id);
-            bookingsMap[t.id] = t.bookings;
+          for (const tb of fl.tables) {
+            if (!tb.available) booked.add(tb.id);
+            bookingsMap[tb.id] = tb.bookings;
           }
         }
         setOccupiedIds(booked);
         setTableBookings(bookingsMap);
         setAvailFetched(true);
-        // deselect table if it just became occupied
         setSelectedTable((prev) => (prev && booked.has(prev.id) ? null : prev));
       } catch {
-        // silently ignore — canvas just won't dim booked tables
+        // silently ignore
       } finally {
         setAvailLoading(false);
       }
@@ -202,14 +202,13 @@ export default function NewBookingPage() {
     }
   }, [date, startTime, fetchAvailability]);
 
-  // Build display floor: overlay occupancy onto isActive
   const rawFloor = selectedFloorId ? floorsData[selectedFloorId] : null;
   const displayFloor: Floor | null = rawFloor
     ? {
         ...rawFloor,
-        tables: rawFloor.tables?.map((t) => ({
-          ...t,
-          isActive: t.isActive && !occupiedIds.has(t.id),
+        tables: rawFloor.tables?.map((tb) => ({
+          ...tb,
+          isActive: tb.isActive && !occupiedIds.has(tb.id),
         })),
       }
     : null;
@@ -219,15 +218,15 @@ export default function NewBookingPage() {
   async function handleSubmit() {
     setError("");
     if (!selectedTable) {
-      setError("Select a table on the floor plan");
+      setError(t("newBooking.selectTableError"));
       return;
     }
     if (!date || !startTime) {
-      setError("Date and arrival time are required");
+      setError(t("newBooking.dateTimeRequired"));
       return;
     }
     if (!guestName.trim()) {
-      setError("Guest name is required");
+      setError(t("newBooking.guestNameRequired"));
       return;
     }
 
@@ -248,7 +247,7 @@ export default function NewBookingPage() {
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })
         ?.response?.data?.error;
-      setError(typeof msg === "string" ? msg : "Failed to create booking");
+      setError(typeof msg === "string" ? msg : t("newBooking.failed"));
     } finally {
       setSubmitting(false);
     }
@@ -315,7 +314,7 @@ export default function NewBookingPage() {
             onMouseEnter={(e) => (e.currentTarget.style.color = "#18160f")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#9a9088")}
           >
-            ← Reservations
+            {t("nav.backToReservations")}
           </Link>
           <div
             style={{
@@ -344,7 +343,7 @@ export default function NewBookingPage() {
               borderRadius: "999px",
             }}
           >
-            Owner
+            {t("badge.owner")}
           </span>
         </div>
       </nav>
@@ -393,7 +392,7 @@ export default function NewBookingPage() {
                     letterSpacing: "0.05em",
                   }}
                 >
-                  Staff booking
+                  {t("newBooking.staffBooking")}
                 </span>
               </div>
               <h1
@@ -404,7 +403,7 @@ export default function NewBookingPage() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                New Manual Reservation
+                {t("newBooking.title")}
               </h1>
               <p
                 style={{
@@ -413,7 +412,7 @@ export default function NewBookingPage() {
                   marginTop: "0.25rem",
                 }}
               >
-                Phone-in or walk-up · Confirms immediately, no approval needed
+                {t("newBooking.subtitle")}
               </p>
             </div>
             {restaurant && (
@@ -519,11 +518,11 @@ export default function NewBookingPage() {
                   <span style={{ fontSize: "0.8125rem", color: "#5c5248" }}>
                     {timeReady
                       ? availLoading
-                        ? "Checking availability…"
+                        ? t("newBooking.checkingAvail")
                         : availFetched
-                          ? `Select an available table for ${date} · ${startTime}`
-                          : "Click a table to select it"
-                      : "Set date and arrival time to see live availability"}
+                          ? t("newBooking.selectAvailable", { date, time: startTime })
+                          : t("newBooking.clickTable")
+                      : t("newBooking.setDateTime")}
                   </span>
                 </div>
                 {availLoading && (
@@ -545,8 +544,8 @@ export default function NewBookingPage() {
                 <FloorViewCanvas
                   floor={displayFloor}
                   selectedTableId={selectedTable?.id ?? null}
-                  onSelectTable={(t) => {
-                    setSelectedTable(t);
+                  onSelectTable={(tb) => {
+                    setSelectedTable(tb);
                     setError("");
                   }}
                   partySize={partySize}
@@ -570,12 +569,12 @@ export default function NewBookingPage() {
                   marginBottom: "0.5rem",
                 }}
               >
-                No floor plans
+                {t("newBooking.noFloorPlans")}
               </p>
               <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>
-                Set up your floor layout in the{" "}
+                {t("newBooking.noFloorPlansNote")}{" "}
                 <Link href="/dashboard" style={{ color: "#c4410c" }}>
-                  dashboard
+                  {t("newBooking.noFloorPlansLink")}
                 </Link>{" "}
                 first.
               </p>
@@ -611,10 +610,10 @@ export default function NewBookingPage() {
                     marginBottom: "0.375rem",
                   }}
                 >
-                  Booking confirmed!
+                  {t("newBooking.confirmed")}
                 </p>
                 <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>
-                  Redirecting to reservations…
+                  {t("newBooking.redirecting")}
                 </p>
               </div>
             ) : (
@@ -628,7 +627,7 @@ export default function NewBookingPage() {
                     letterSpacing: "-0.01em",
                   }}
                 >
-                  Booking details
+                  {t("newBooking.bookingDetails")}
                 </h3>
 
                 {/* Selected table indicator */}
@@ -663,7 +662,7 @@ export default function NewBookingPage() {
                         }}
                       >
                         {selectedTable.minCapacity}–{selectedTable.capacity}{" "}
-                        guests{selectedTable.isWindowSeat ? " · Window" : ""}
+                        {t("newBooking.guests")}{selectedTable.isWindowSeat ? " · Window" : ""}
                       </p>
                     </div>
                     <button
@@ -694,7 +693,7 @@ export default function NewBookingPage() {
                     }}
                   >
                     <p style={{ fontSize: "0.8125rem", color: "#9a9088" }}>
-                      ← Click a table on the floor plan
+                      {t("newBooking.selectTable")}
                     </p>
                   </div>
                 )}
@@ -724,7 +723,7 @@ export default function NewBookingPage() {
                 >
                   {/* Date */}
                   <div>
-                    <label className="label">Date</label>
+                    <label className="label">{t("newBooking.date")}</label>
                     <input
                       type="date"
                       min={TODAY}
@@ -740,7 +739,7 @@ export default function NewBookingPage() {
 
                   {/* Arrival time */}
                   <div>
-                    <label className="label">Arrival</label>
+                    <label className="label">{t("newBooking.arrival")}</label>
                     <select
                       value={startTime}
                       onChange={(e) => {
@@ -750,9 +749,9 @@ export default function NewBookingPage() {
                       className="input"
                     >
                       <option value="">--:--</option>
-                      {slots.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
+                      {slots.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
                         </option>
                       ))}
                     </select>
@@ -760,7 +759,7 @@ export default function NewBookingPage() {
 
                   {/* Party size */}
                   <div>
-                    <label className="label">Party size</label>
+                    <label className="label">{t("newBooking.partySize")}</label>
                     <div
                       style={{
                         display: "flex",
@@ -775,19 +774,15 @@ export default function NewBookingPage() {
                         value={partySizeRaw}
                         onChange={(e) => {
                           const value = e.target.value;
-
-                          // allow only digits
                           if (/^\d*$/.test(value)) {
                             setPartySizeRaw(value);
                           }
                         }}
                         onBlur={() => {
                           const v = parseInt(partySizeRaw, 10);
-
                           const clamped = isNaN(v)
                             ? partySize
                             : Math.max(1, Math.min(30, v));
-
                           setPartySize(clamped);
                           setPartySizeRaw(String(clamped));
                           setSelectedTable(null);
@@ -808,7 +803,7 @@ export default function NewBookingPage() {
                         }}
                       />
                       <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>
-                        guests
+                        {t("newBooking.guests")}
                       </span>
                     </div>
                     <p
@@ -818,7 +813,7 @@ export default function NewBookingPage() {
                         marginTop: "0.375rem",
                       }}
                     >
-                      Tables too small are dimmed on the map
+                      {t("newBooking.tablesTooSmall")}
                     </p>
                   </div>
 
@@ -839,7 +834,7 @@ export default function NewBookingPage() {
                         marginBottom: "0.875rem",
                       }}
                     >
-                      Guest info
+                      {t("newBooking.guestInfo")}
                     </p>
                     <div
                       style={{
@@ -850,7 +845,7 @@ export default function NewBookingPage() {
                     >
                       <div>
                         <label className="label">
-                          Name <span style={{ color: "#c4410c" }}>*</span>
+                          {t("newBooking.name")} <span style={{ color: "#c4410c" }}>*</span>
                         </label>
                         <input
                           type="text"
@@ -861,7 +856,7 @@ export default function NewBookingPage() {
                         />
                       </div>
                       <div>
-                        <label className="label">Phone</label>
+                        <label className="label">{t("newBooking.phone")}</label>
                         <input
                           type="tel"
                           value={guestPhone}
@@ -872,9 +867,9 @@ export default function NewBookingPage() {
                       </div>
                       <div>
                         <label className="label">
-                          Email{" "}
+                          {t("newBooking.email")}{" "}
                           <span style={{ fontWeight: 400, color: "#9a9088" }}>
-                            (optional)
+                            {t("newBooking.emailOptional")}
                           </span>
                         </label>
                         <input
@@ -891,16 +886,16 @@ export default function NewBookingPage() {
                   {/* Notes */}
                   <div>
                     <label className="label">
-                      Notes{" "}
+                      {t("newBooking.notes")}{" "}
                       <span style={{ fontWeight: 400, color: "#9a9088" }}>
-                        (optional)
+                        {t("newBooking.notesOptional")}
                       </span>
                     </label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={2}
-                      placeholder="Special requests, occasion, dietary needs…"
+                      placeholder={t("newBooking.notesStar")}
                       className="input"
                       style={{ resize: "none" }}
                     />
@@ -917,7 +912,7 @@ export default function NewBookingPage() {
                       opacity: submitting ? 0.65 : 1,
                     }}
                   >
-                    {submitting ? "Confirming…" : "Confirm booking"}
+                    {submitting ? t("newBooking.confirming") : t("newBooking.confirm")}
                   </button>
 
                   <p
@@ -927,7 +922,7 @@ export default function NewBookingPage() {
                       textAlign: "center",
                     }}
                   >
-                    Reservation is confirmed immediately — no approval step
+                    {t("newBooking.noApproval")}
                   </p>
                 </div>
               </>

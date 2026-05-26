@@ -5,6 +5,7 @@ import { Menu, MenuGroup, MenuItem, DietaryTag } from "@/types";
 import { api } from "@/lib/api";
 import { DIETARY_TAG_LABELS } from "@/lib/menu-presets";
 import MenuItemForm from "./MenuItemForm";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   menu: Menu;
@@ -150,6 +151,7 @@ function GroupSection({ group, menuId, onUpdate, onDelete }: {
 }
 
 export default function StructuredMenuEditor({ menu, onUpdate }: Props) {
+  const { t } = useTranslation();
   const [addingGroup, setAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const groups = menu.groups ?? [];
@@ -187,8 +189,8 @@ export default function StructuredMenuEditor({ menu, onUpdate }: Props) {
       {addingGroup ? (
         <form onSubmit={handleAddGroup} style={{ display: "flex", gap: "0.5rem" }}>
           <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="input" placeholder="Section name, e.g. Starters" autoFocus />
-          <button type="submit" className="btn btn-primary btn-sm">Add</button>
-          <button type="button" onClick={() => { setAddingGroup(false); setNewGroupName(""); }} className="btn btn-ghost btn-sm">Cancel</button>
+          <button type="submit" className="btn btn-primary btn-sm">{t("common.add")}</button>
+          <button type="button" onClick={() => { setAddingGroup(false); setNewGroupName(""); }} className="btn btn-ghost btn-sm">{t("common.cancel")}</button>
         </form>
       ) : (
         <button onClick={() => setAddingGroup(true)} className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }}>

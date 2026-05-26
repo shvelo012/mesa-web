@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 export default function VerifyEmailPendingPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
 
@@ -21,7 +23,7 @@ export default function VerifyEmailPendingPage() {
       setResent(true);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setError(msg || "Failed to resend. Try again.");
+      setError(msg || t("auth.verifyPending.failedResend"));
     } finally {
       setResending(false);
     }
@@ -39,10 +41,10 @@ export default function VerifyEmailPendingPage() {
         <div className="anim-1 card" style={{ opacity: 0, width: "100%", maxWidth: "440px", padding: "2.5rem", textAlign: "center" }}>
           <div style={{ fontSize: "3rem", marginBottom: "1.25rem" }}>📬</div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.75rem" }}>
-            Check your email
+            {t("auth.verifyPending.title")}
           </h1>
           <p style={{ fontSize: "0.9375rem", color: "#5c5248", lineHeight: 1.6, marginBottom: "0.5rem" }}>
-            We sent a verification link to
+            {t("auth.verifyPending.sentLink")}
           </p>
           {email && (
             <p style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#18160f", marginBottom: "1.5rem" }}>
@@ -50,12 +52,12 @@ export default function VerifyEmailPendingPage() {
             </p>
           )}
           <p style={{ fontSize: "0.875rem", color: "#9a9088", marginBottom: "2rem", lineHeight: 1.6 }}>
-            Click the link to activate your account. You won&apos;t be able to sign in until your email is verified.
+            {t("auth.verifyPending.clickLink")}
           </p>
 
           {resent ? (
             <div style={{ padding: "0.75rem 1rem", background: "#f0fdf4", border: "1px solid rgba(22,163,74,0.2)", borderRadius: "8px", color: "#16a34a", fontSize: "0.875rem", marginBottom: "1.25rem" }}>
-              Verification email resent.
+              {t("auth.verifyPending.emailResent")}
             </div>
           ) : (
             <>
@@ -70,13 +72,13 @@ export default function VerifyEmailPendingPage() {
                 className="btn btn-outline btn-md"
                 style={{ width: "100%", marginBottom: "1rem" }}
               >
-                {resending ? "Sending…" : "Resend verification email"}
+                {resending ? t("auth.verifyPending.resending") : t("auth.verifyPending.resend")}
               </button>
             </>
           )}
 
           <Link href="/login" style={{ fontSize: "0.875rem", color: "#9a9088", textDecoration: "none" }}>
-            Back to sign in
+            {t("auth.verifyPending.backToSignIn")}
           </Link>
         </div>
       </div>

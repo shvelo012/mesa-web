@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,7 +31,7 @@ export default function LoginPage() {
       if (msg === "EMAIL_NOT_VERIFIED") {
         setUnverified(true);
       } else {
-        setError(msg || "Login failed");
+        setError(msg || t("auth.login.loginFailed"));
       }
     } finally {
       setLoading(false);
@@ -37,10 +40,11 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f5f3ef", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "1.25rem 1.5rem" }}>
+      <div style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Link href="/" style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18160f", textDecoration: "none", letterSpacing: "-0.02em" }}>
           mesa
         </Link>
+        <LanguageSwitcher />
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem 1rem" }}>
@@ -48,10 +52,10 @@ export default function LoginPage() {
 
           <div style={{ marginBottom: "2rem" }}>
             <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#18160f", letterSpacing: "-0.02em", marginBottom: "0.375rem" }}>
-              Welcome back
+              {t("auth.login.title")}
             </h1>
             <p style={{ fontSize: "0.9375rem", color: "#9a9088" }}>
-              Sign in to your Mesa account
+              {t("auth.login.subtitle")}
             </p>
           </div>
 
@@ -64,39 +68,39 @@ export default function LoginPage() {
           {unverified && (
             <div style={{ padding: "0.875rem 1rem", background: "#fffbeb", border: "1px solid rgba(180,83,9,0.25)", borderRadius: "8px", marginBottom: "1.25rem" }}>
               <p style={{ fontSize: "0.875rem", color: "#92400e", fontWeight: 600, marginBottom: "0.375rem" }}>
-                Email not verified
+                {t("auth.login.emailNotVerified")}
               </p>
               <p style={{ fontSize: "0.8125rem", color: "#92400e", marginBottom: "0.75rem" }}>
-                Check your inbox for the verification link, or get a new one.
+                {t("auth.login.checkInbox")}
               </p>
               <Link
                 href={`/verify-email/pending?email=${encodeURIComponent(email)}`}
                 style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#b45309", textDecoration: "underline" }}
               >
-                Resend verification email →
+                {t("auth.login.resendVerification")}
               </Link>
             </div>
           )}
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.125rem" }}>
             <div>
-              <label className="label">Email address</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="you@example.com" />
+              <label className="label">{t("auth.login.emailLabel")}</label>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder={t("auth.login.emailPlaceholder")} />
             </div>
             <div>
-              <label className="label">Password</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input" placeholder="••••••••" />
+              <label className="label">{t("auth.login.passwordLabel")}</label>
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input" placeholder={t("auth.login.passwordPlaceholder")} />
             </div>
             <button type="submit" className="btn btn-primary btn-md" disabled={loading} style={{ width: "100%", marginTop: "0.375rem" }}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? t("auth.login.signingIn") : t("auth.login.signIn")}
             </button>
           </form>
 
           <div style={{ marginTop: "1.75rem", paddingTop: "1.75rem", borderTop: "1px solid rgba(24,22,15,0.08)", textAlign: "center" }}>
             <p style={{ fontSize: "0.9375rem", color: "#5c5248" }}>
-              Don&apos;t have an account?{" "}
+              {t("auth.login.noAccount")}{" "}
               <Link href="/register" style={{ color: "#c4410c", fontWeight: 600, textDecoration: "none" }}>
-                Sign up free
+                {t("auth.login.signUpFree")}
               </Link>
             </p>
           </div>

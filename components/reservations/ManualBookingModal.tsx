@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 type FloorData = {
   id: string;
@@ -42,6 +43,7 @@ export function ManualBookingModal({
   restaurantCloseTime,
   restaurantReservationTimes,
 }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState("");
 
@@ -77,7 +79,7 @@ export function ManualBookingModal({
       setFloors(data.floors);
       if (data.floors.length > 0) setActiveFloorId(data.floors[0].id);
     } catch {
-      setError("Failed to load table availability");
+      setError(t("newBooking.failedAvail"));
     } finally {
       setAvailLoading(false);
     }
@@ -86,7 +88,7 @@ export function ManualBookingModal({
   function goStep2() {
     setError("");
     if (!guestName.trim()) {
-      setError("Guest name is required");
+      setError(t("newBooking.guestNameRequired"));
       return;
     }
     setStep(2);
@@ -95,11 +97,11 @@ export function ManualBookingModal({
   function goStep3() {
     setError("");
     if (!date) {
-      setError("Date is required");
+      setError(t("newBooking.dateRequired"));
       return;
     }
     if (!startTime) {
-      setError("Arrival time is required");
+      setError(t("newBooking.arrivalRequired"));
       return;
     }
     setSelectedTableId(null);
@@ -127,7 +129,7 @@ export function ManualBookingModal({
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })
         ?.response?.data?.error;
-      setError(typeof msg === "string" ? msg : "Failed to create booking");
+      setError(typeof msg === "string" ? msg : t("newBooking.failed"));
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +200,7 @@ export function ManualBookingModal({
                   textTransform: "uppercase",
                 }}
               >
-                Manual
+                {t("newBooking.manual")}
               </span>
               <h2
                 style={{
@@ -208,7 +210,7 @@ export function ManualBookingModal({
                   letterSpacing: "-0.01em",
                 }}
               >
-                New Booking
+                {t("newBooking.modalTitle")}
               </h2>
             </div>
             <p
@@ -218,7 +220,7 @@ export function ManualBookingModal({
                 marginTop: "0.1rem",
               }}
             >
-              Phone-in or walk-up — confirms immediately
+              {t("newBooking.subtitle")}
             </p>
           </div>
           <button
@@ -247,7 +249,7 @@ export function ManualBookingModal({
             gap: "0.25rem",
           }}
         >
-          {(["Guest", "When", "Table"] as const).map((label, i) => {
+          {([t("newBooking.stepGuest"), t("newBooking.stepWhen"), t("newBooking.stepTable")] as const).map((label, i) => {
             const s = i + 1;
             const done = step > s;
             const active = step === s;
@@ -338,7 +340,7 @@ export function ManualBookingModal({
             >
               <div>
                 <label style={labelStyle}>
-                  Guest name <span style={{ color: "#c4410c" }}>*</span>
+                  {t("newBooking.guestName")} <span style={{ color: "#c4410c" }}>*</span>
                 </label>
                 <input
                   autoFocus
@@ -350,7 +352,7 @@ export function ManualBookingModal({
                 />
               </div>
               <div>
-                <label style={labelStyle}>Phone</label>
+                <label style={labelStyle}>{t("newBooking.phone")}</label>
                 <input
                   value={guestPhone}
                   onChange={(e) => setGuestPhone(e.target.value)}
@@ -362,9 +364,9 @@ export function ManualBookingModal({
               </div>
               <div>
                 <label style={labelStyle}>
-                  Email{" "}
+                  {t("newBooking.email")}{" "}
                   <span style={{ fontWeight: 400, color: "#9a9088" }}>
-                    (optional)
+                    {t("newBooking.emailOptional")}
                   </span>
                 </label>
                 <input
@@ -381,7 +383,7 @@ export function ManualBookingModal({
                 className="btn btn-primary btn-md"
                 style={{ width: "100%", marginTop: "0.25rem" }}
               >
-                Continue →
+                {t("newBooking.continue")}
               </button>
             </div>
           )}
@@ -397,7 +399,7 @@ export function ManualBookingModal({
             >
               <div>
                 <label style={labelStyle}>
-                  Date <span style={{ color: "#c4410c" }}>*</span>
+                  {t("newBooking.date")} <span style={{ color: "#c4410c" }}>*</span>
                 </label>
                 <input
                   autoFocus
@@ -410,7 +412,7 @@ export function ManualBookingModal({
               </div>
               <div>
                 <label style={labelStyle}>
-                  Arrival time <span style={{ color: "#c4410c" }}>*</span>
+                  {t("newBooking.arrival")} <span style={{ color: "#c4410c" }}>*</span>
                 </label>
                 {restaurantReservationTimes?.length ? (
                   <select
@@ -435,7 +437,7 @@ export function ManualBookingModal({
                 )}
               </div>
               <div>
-                <label style={labelStyle}>Party size</label>
+                <label style={labelStyle}>{t("newBooking.partySize")}</label>
                 <div
                   style={{
                     display: "flex",
@@ -489,7 +491,7 @@ export function ManualBookingModal({
                       marginLeft: "0.25rem",
                     }}
                   >
-                    guests
+                    {t("newBooking.guests")}
                   </span>
                 </div>
               </div>
@@ -505,14 +507,14 @@ export function ManualBookingModal({
                   className="btn btn-ghost btn-md"
                   style={{ flex: 1 }}
                 >
-                  ← Back
+                  ← {t("nav.back")}
                 </button>
                 <button
                   onClick={goStep3}
                   className="btn btn-primary btn-md"
                   style={{ flex: 2 }}
                 >
-                  Find tables →
+                  {t("newBooking.findTables")}
                 </button>
               </div>
             </div>
@@ -545,7 +547,7 @@ export function ManualBookingModal({
                     }}
                   />
                   <span style={{ fontSize: "0.8125rem", color: "#9a9088" }}>
-                    Checking availability…
+                    {t("newBooking.checkingAvail")}
                   </span>
                 </div>
               ) : (
@@ -595,11 +597,10 @@ export function ManualBookingModal({
                           marginBottom: "0.375rem",
                         }}
                       >
-                        No tables available
+                        {t("newBooking.noTablesAvailable")}
                       </p>
                       <p style={{ fontSize: "0.8125rem", color: "#9a9088" }}>
-                        No active tables can seat {partySize} guest
-                        {partySize > 1 ? "s" : ""} for this time.
+                        {t("newBooking.noTablesFit", { count: partySize })}
                       </p>
                     </div>
                   ) : (
@@ -679,7 +680,7 @@ export function ManualBookingModal({
                           }}
                         >
                           <p style={{ fontSize: "0.875rem", color: "#9a9088" }}>
-                            No tables in this section fit party of {partySize}
+                            {t("newBooking.noTablesSection", { count: partySize })}
                           </p>
                         </div>
                       ) : (
@@ -693,36 +694,36 @@ export function ManualBookingModal({
                             paddingRight: "2px",
                           }}
                         >
-                          {visibleTables.map((t) => {
-                            const selected = selectedTableId === t.id;
+                          {visibleTables.map((tbl) => {
+                            const selected = selectedTableId === tbl.id;
                             return (
                               <button
-                                key={t.id}
+                                key={tbl.id}
                                 onClick={() =>
-                                  t.available && setSelectedTableId(t.id)
+                                  tbl.available && setSelectedTableId(tbl.id)
                                 }
-                                disabled={!t.available}
+                                disabled={!tbl.available}
                                 style={{
                                   padding: "0.75rem 0.625rem",
                                   border: "2px solid",
                                   borderRadius: "10px",
-                                  cursor: t.available
+                                  cursor: tbl.available
                                     ? "pointer"
                                     : "not-allowed",
                                   textAlign: "left",
                                   fontFamily: "inherit",
                                   transition: "all 0.15s",
-                                  background: !t.available
+                                  background: !tbl.available
                                     ? "#f8f8f7"
                                     : selected
                                       ? "#fef2ec"
                                       : "#ffffff",
-                                  borderColor: !t.available
+                                  borderColor: !tbl.available
                                     ? "rgba(24,22,15,0.07)"
                                     : selected
                                       ? "#c4410c"
                                       : "rgba(24,22,15,0.12)",
-                                  opacity: t.available ? 1 : 0.5,
+                                  opacity: tbl.available ? 1 : 0.5,
                                   boxShadow: selected
                                     ? "0 0 0 3px rgba(196,65,12,0.15)"
                                     : "none",
@@ -740,16 +741,16 @@ export function ManualBookingModal({
                                     style={{
                                       fontSize: "1rem",
                                       fontWeight: 700,
-                                      color: !t.available
+                                      color: !tbl.available
                                         ? "#c8c4be"
                                         : selected
                                           ? "#c4410c"
                                           : "#18160f",
                                     }}
                                   >
-                                    T{t.label}
+                                    T{tbl.label}
                                   </span>
-                                  {t.isWindowSeat && (
+                                  {tbl.isWindowSeat && (
                                     <span
                                       style={{
                                         fontSize: "0.55rem",
@@ -772,9 +773,9 @@ export function ManualBookingModal({
                                     marginBottom: "0.2rem",
                                   }}
                                 >
-                                  {t.minCapacity === t.capacity
-                                    ? `${t.capacity}p`
-                                    : `${t.minCapacity}–${t.capacity}p`}
+                                  {tbl.minCapacity === tbl.capacity
+                                    ? `${tbl.capacity}p`
+                                    : `${tbl.minCapacity}–${tbl.capacity}p`}
                                 </p>
                                 <div
                                   style={{
@@ -788,7 +789,7 @@ export function ManualBookingModal({
                                       width: "5px",
                                       height: "5px",
                                       borderRadius: "50%",
-                                      background: t.available
+                                      background: tbl.available
                                         ? "#16a34a"
                                         : "#9a9088",
                                     }}
@@ -797,14 +798,14 @@ export function ManualBookingModal({
                                     style={{
                                       fontSize: "0.6rem",
                                       fontWeight: 600,
-                                      color: t.available
+                                      color: tbl.available
                                         ? "#16a34a"
                                         : "#9a9088",
                                       textTransform: "uppercase",
                                       letterSpacing: "0.03em",
                                     }}
                                   >
-                                    {t.available ? "Free" : "Booked"}
+                                    {tbl.available ? t("newBooking.legend.available") : t("newBooking.legend.booked")}
                                   </span>
                                 </div>
                               </button>
@@ -818,9 +819,9 @@ export function ManualBookingModal({
                   {/* Notes */}
                   <div>
                     <label style={labelStyle}>
-                      Notes{" "}
+                      {t("newBooking.notes")}{" "}
                       <span style={{ fontWeight: 400, color: "#9a9088" }}>
-                        (optional)
+                        {t("common.optional")}
                       </span>
                     </label>
                     <textarea
@@ -851,12 +852,9 @@ export function ManualBookingModal({
                     >
                       <span>✓</span>
                       <span>
-                        Table{" "}
-                        {
-                          visibleTables.find((t) => t.id === selectedTableId)
-                            ?.label
-                        }{" "}
-                        selected — booking will be confirmed immediately
+                        {t("newBooking.tableSelected", {
+                          label: visibleTables.find((tbl) => tbl.id === selectedTableId)?.label,
+                        })}
                       </span>
                     </div>
                   )}
@@ -867,7 +865,7 @@ export function ManualBookingModal({
                       className="btn btn-ghost btn-md"
                       style={{ flex: 1 }}
                     >
-                      ← Back
+                      ← {t("nav.back")}
                     </button>
                     <button
                       onClick={submit}
@@ -878,7 +876,7 @@ export function ManualBookingModal({
                         opacity: !selectedTableId || submitting ? 0.55 : 1,
                       }}
                     >
-                      {submitting ? "Booking…" : "Confirm booking"}
+                      {submitting ? t("newBooking.confirming") : t("newBooking.confirm")}
                     </button>
                   </div>
                 </>

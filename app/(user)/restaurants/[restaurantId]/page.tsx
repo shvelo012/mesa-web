@@ -9,6 +9,8 @@ import { useAuthStore } from "@/store/auth.store";
 import { useToast } from "@/components/ui/Toast";
 import MenuDisplay from "@/components/menu/MenuDisplay";
 import ReviewList from "@/components/reviews/ReviewList";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 
 const FloorViewCanvas = dynamic(
   () => import("@/components/canvas/FloorViewCanvas"),
@@ -87,6 +89,7 @@ function Legend() {
 }
 
 export default function RestaurantDetailPage() {
+  const { t } = useTranslation();
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const { user, logout } = useAuthStore();
   const router = useRouter();

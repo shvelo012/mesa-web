@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MenuItem, DietaryTag } from "@/types";
 import { DIETARY_TAG_LABELS, ALL_DIETARY_TAGS } from "@/lib/menu-presets";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   onSave: (data: {
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function MenuItemForm({ onSave, onCancel, initial }: Props) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initial?.name ?? "");
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -106,7 +108,7 @@ export default function MenuItemForm({ onSave, onCancel, initial }: Props) {
       <div>
         <label className="label">
           Description{" "}
-          <span style={{ fontWeight: 400, color: "#9a9088" }}>(optional)</span>
+          <span style={{ fontWeight: 400, color: "#9a9088" }}>{t("common.optional")}</span>
         </label>
         <textarea
           value={description}
@@ -161,14 +163,14 @@ export default function MenuItemForm({ onSave, onCancel, initial }: Props) {
           disabled={saving}
           className="btn btn-primary btn-sm"
         >
-          {saving ? "Saving…" : initial?.id ? "Update dish" : "Add dish"}
+          {saving ? t("common.save") + "…" : initial?.id ? "Update dish" : "Add dish"}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="btn btn-ghost btn-sm"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </form>
