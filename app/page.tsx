@@ -114,8 +114,14 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <div style={{ borderTop: "1px solid rgba(24,22,15,0.08)", padding: "1.5rem", textAlign: "center" }}>
+      <div style={{ borderTop: "1px solid rgba(24,22,15,0.08)", padding: "1.5rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1.25rem", flexWrap: "wrap" }}>
         <p style={{ fontSize: "0.8125rem", color: "#9a9088" }}>© {new Date().getFullYear()} Mesa · Reservations made simple</p>
+        <Link href="/privacy-policy" style={{ fontSize: "0.8125rem", color: "#9a9088", textDecoration: "none", transition: "color 0.15s" }}
+          onMouseEnter={e => (e.currentTarget.style.color = "#c4410c")}
+          onMouseLeave={e => (e.currentTarget.style.color = "#9a9088")}
+        >
+          Privacy Policy
+        </Link>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ export default function RegisterPage() {
     password: "",
     role: "USER" as "USER" | "RESTAURANT_OWNER",
   });
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { register } = useAuthStore();
@@ -107,7 +108,24 @@ export default function RegisterPage() {
               <label className="label">Password</label>
               <input type="password" required minLength={8} value={form.password} onChange={(e) => set("password", e.target.value)} className="input" placeholder="Min. 8 characters" />
             </div>
-            <button type="submit" className="btn btn-primary btn-md" disabled={loading} style={{ width: "100%", marginTop: "0.375rem" }}>
+            {/* Privacy policy consent */}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: "0.625rem", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                required
+                checked={agreedToPrivacy}
+                onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+                style={{ marginTop: "2px", accentColor: "#c4410c", width: "15px", height: "15px", flexShrink: 0, cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "0.8125rem", color: "#5c5248", lineHeight: 1.5 }}>
+                I have read and agree to the{" "}
+                <Link href="/privacy-policy" target="_blank" style={{ color: "#c4410c", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: "2px" }}>
+                  Privacy Policy
+                </Link>
+              </span>
+            </label>
+
+            <button type="submit" className="btn btn-primary btn-md" disabled={loading || !agreedToPrivacy} style={{ width: "100%", marginTop: "0.375rem" }}>
               {loading ? "Creating account…" : "Create account"}
             </button>
           </form>
