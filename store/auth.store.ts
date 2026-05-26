@@ -8,6 +8,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   permissions: Permission[];
+  featureKeys: string[];
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
@@ -19,7 +20,10 @@ interface AuthState {
   }) => Promise<void>;
   logout: () => void;
   can: (permission: Permission) => boolean;
+  /** Check if the restaurant's active plan (+ direct grants) includes a feature key */
+  hasFeature: (key: string) => boolean;
   loadPermissions: () => Promise<void>;
+  loadFeatures: () => Promise<void>;
   markEmailVerified: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
@@ -31,6 +35,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       permissions: [],
+      featureKeys: [],
       _hasHydrated: false,
       setHasHydrated: (v) => set({ _hasHydrated: v }),
 
@@ -40,17 +45,17 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem("refreshToken", data.refreshToken);
         set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken });
         await get().loadPermissions();
+        await get().loadFeatures();
       },
 
       register: async (formData) => {
         await api.post("/auth/register", formData);
-        // No tokens — user must verify email before logging in
       },
 
       logout: () => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        set({ user: null, accessToken: null, refreshToken: null, permissions: [] });
+        set({ user: null, accessToken: null, refreshToken: null, permissions: [], featureKeys: [] });
       },
 
       can: (permission: Permission) => {
@@ -58,6 +63,14 @@ export const useAuthStore = create<AuthState>()(
         if (!user) return false;
         if (user.role === "ADMIN" || user.role === "RESTAURANT_OWNER") return true;
         return permissions.includes(permission);
+      },
+
+      hasFeature: (key: string) => {
+        const { user, featureKeys } = get();
+        if (!user) return false;
+        // ADMIN has everything
+        if (user.role === "ADMIN") return true;
+        return featureKeys.includes(key);
       },
 
       loadPermissions: async () => {
@@ -68,7 +81,21 @@ export const useAuthStore = create<AuthState>()(
             set({ permissions: first.permissions || [] });
           }
         } catch {
-          // silently fail — permissions stay empty
+          // silently fail
+        }
+      },
+
+      loadFeatures: async () => {
+        try {
+          const { user } = get();
+          // Only owners/admins have subscriptions
+          if (!user || (user.role !== "RESTAURANT_OWNER" && user.role !== "ADMIN")) return;
+          const { data } = await api.get("/plans/my-features");
+          if (Array.isArray(data)) {
+            set({ featureKeys: data });
+          }
+        } catch {
+          // silently fail — featureKeys stays empty
         }
       },
 
@@ -82,7 +109,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-store",
-      partialize: (s) => ({ user: s.user, permissions: s.permissions }),
+      partialize: (s) => ({ user: s.user, permissions: s.permissions, featureKeys: s.featureKeys }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

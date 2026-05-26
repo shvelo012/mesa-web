@@ -61,7 +61,7 @@ function nowTime(): string {
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { user, logout, _hasHydrated, can } = useAuthStore();
+  const { user, logout, _hasHydrated, can, hasFeature } = useAuthStore();
   const router = useRouter();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -290,8 +290,8 @@ export default function DashboardPage() {
             <Link href="/menu" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.menu")}</button></Link>
             <Link href="/settings" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.settings")}</button></Link>
             <Link href="/billing" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">Billing</button></Link>
-            {can("REPORTS") && <Link href="/dashboard/reports" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.reports")}</button></Link>}
-            {can("STAFF_MANAGE") && <Link href="/dashboard/staff" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.staff")}</button></Link>}
+            {can("REPORTS") && hasFeature("reports") && <Link href="/dashboard/reports" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.reports")}</button></Link>}
+            {can("STAFF_MANAGE") && hasFeature("staff_management") && <Link href="/dashboard/staff" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.staff")}</button></Link>}
             {user && <span style={{ fontSize: "0.875rem", color: "#9a9088" }}>{user.name}</span>}
             <LanguageSwitcher />
             <button className="btn btn-ghost btn-sm" onClick={() => { logout(); router.push("/"); }}>{t("nav.signOut")}</button>

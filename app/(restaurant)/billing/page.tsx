@@ -242,7 +242,7 @@ function PlanCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingPage() {
-  const { user, _hasHydrated, logout } = useAuthStore();
+  const { user, _hasHydrated, logout, loadFeatures } = useAuthStore();
   const router = useRouter();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -358,6 +358,7 @@ export default function BillingPage() {
           onClose={() => setUpgradingPlan(null)}
           onSuccess={(newSub) => {
             setSub(newSub);
+            loadFeatures(); // refresh gate state immediately
             setUpgradingPlan(null);
           }}
         />

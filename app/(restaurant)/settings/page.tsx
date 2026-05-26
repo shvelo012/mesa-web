@@ -7,13 +7,14 @@ import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/api";
 import { Restaurant } from "@/types";
 import ChangePasswordForm from "@/components/ui/ChangePasswordForm";
+import UpgradeGate from "@/components/ui/UpgradeGate";
 import { useTranslation } from "react-i18next";
 
 type Mode = "reply-to" | "custom-smtp";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const { user, logout, _hasHydrated, can } = useAuthStore();
+  const { user, logout, _hasHydrated, can, hasFeature } = useAuthStore();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -266,6 +267,11 @@ export default function SettingsPage() {
           )}
         </div>
 
+        {!hasFeature("custom_smtp") ? (
+          <div className="anim-2" style={{ opacity: 0, marginTop: "1.25rem" }}>
+            <UpgradeGate featureKey="custom_smtp" featureName="Custom Email (SMTP)" requiredPlan="Pro" />
+          </div>
+        ) : (
         <div className="anim-2 card" style={{ opacity: 0, padding: "1.75rem" }}>
           {/* Mode picker */}
           <p
@@ -617,6 +623,7 @@ export default function SettingsPage() {
               </button>
             </form>
           </div>
+        )}
 
           <div className="card" style={{ padding: "1.75rem", marginTop: "1.25rem" }}>
             <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>
@@ -627,6 +634,11 @@ export default function SettingsPage() {
         </div>
 
         {/* Reservation times */}
+        {!hasFeature("custom_reservation_times") ? (
+          <div className="anim-3" style={{ opacity: 0, marginTop: "1.5rem" }}>
+            <UpgradeGate featureKey="custom_reservation_times" featureName="Custom Time Slots" requiredPlan="Free Trial" />
+          </div>
+        ) : (
         <div className="anim-3 card" style={{ opacity: 0, padding: "1.75rem", marginTop: "1.5rem" }}>
           <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "0.375rem" }}>
             {t("settings.reservationTimes")}
@@ -696,6 +708,7 @@ export default function SettingsPage() {
             {timesSaving ? t("settings.saving") : t("settings.saveTimes")}
           </button>
         </div>
+        )}
       </div>
     </div>
   );
