@@ -623,7 +623,6 @@ export default function SettingsPage() {
               </button>
             </form>
           </div>
-        )}
 
           <div className="card" style={{ padding: "1.75rem", marginTop: "1.25rem" }}>
             <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#18160f", marginBottom: "1.25rem" }}>
@@ -632,6 +631,7 @@ export default function SettingsPage() {
             <ChangePasswordForm />
           </div>
         </div>
+        )}
 
         {/* Reservation times */}
         {!hasFeature("custom_reservation_times") ? (

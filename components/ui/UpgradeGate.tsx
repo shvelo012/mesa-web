@@ -9,7 +9,7 @@ interface Props {
   featureName: string;
   /** Plan name required, e.g. "Pro" */
   requiredPlan?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 /**
