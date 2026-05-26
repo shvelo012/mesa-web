@@ -214,6 +214,9 @@ export default function SettingsPage() {
                 <button className="btn btn-ghost btn-sm">{t("nav.reports")}</button>
               </Link>
             )}
+            <Link href="/billing">
+              <button className="btn btn-ghost btn-sm">Billing</button>
+            </Link>
             {user && (
               <span style={{ fontSize: "0.875rem", color: "#9a9088" }}>
                 {user.name}

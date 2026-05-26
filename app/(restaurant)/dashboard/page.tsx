@@ -289,6 +289,7 @@ export default function DashboardPage() {
             </Link>
             <Link href="/menu" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.menu")}</button></Link>
             <Link href="/settings" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.settings")}</button></Link>
+            <Link href="/billing" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">Billing</button></Link>
             {can("REPORTS") && <Link href="/dashboard/reports" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.reports")}</button></Link>}
             {can("STAFF_MANAGE") && <Link href="/dashboard/staff" style={{ textDecoration: "none" }}><button className="btn btn-ghost btn-sm">{t("nav.staff")}</button></Link>}
             {user && <span style={{ fontSize: "0.875rem", color: "#9a9088" }}>{user.name}</span>}
