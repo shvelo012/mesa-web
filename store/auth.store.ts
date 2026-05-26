@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>()(
       can: (permission: Permission) => {
         const { user, permissions } = get();
         if (!user) return false;
-        if (user.role === "RESTAURANT_OWNER") return true;
+        if (user.role === "ADMIN" || user.role === "RESTAURANT_OWNER") return true;
         return permissions.includes(permission);
       },
 

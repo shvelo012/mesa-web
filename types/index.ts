@@ -1,4 +1,4 @@
-export type Role = "USER" | "RESTAURANT_OWNER";
+export type Role = "USER" | "RESTAURANT_OWNER" | "ADMIN";
 export type MenuType = "PHOTO" | "STRUCTURED";
 export type LayoutStyle = "LIST" | "CARD_GRID" | "TWO_COLUMN";
 export type DietaryTag = "vegan" | "vegetarian" | "gluten-free" | "dairy-free" | "spicy" | "nuts";
@@ -181,6 +181,48 @@ export interface GuestNote {
   note: string;
   authorId?: string | null;
   createdAt: string;
+}
+
+export interface Feature {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export type SubscriptionStatus = "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
+
+export interface Plan {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  priceMonthly: number;
+  trialDays?: number | null;
+  isActive: boolean;
+  sortOrder: number;
+  features?: Feature[];
+  createdAt?: string;
+}
+
+export interface RestaurantFeatureGrant extends Feature {
+  enabled: boolean;
+  grantedAt: string | null;
+}
+
+export interface Subscription {
+  id: string;
+  restaurantId: string;
+  planId: string;
+  status: SubscriptionStatus;
+  trialEndsAt?: string | null;
+  currentPeriodEnd?: string | null;
+  cancelledAt?: string | null;
+  plan?: Plan;
+  restaurant?: Restaurant;
+  createdAt?: string;
 }
 
 export interface Review {
