@@ -97,11 +97,11 @@ const sections: Section[] = [
           and core platform functionality. Specifically:
         </p>
         <ul>
-          <li><strong>Authentication tokens</strong> — stored in browser local storage to keep you signed in between visits.</li>
+          <li><strong>Authentication tokens</strong> — stored securely in your browser to maintain your session.</li>
           <li><strong>Session state</strong> — temporary data held in memory while you use the platform.</li>
         </ul>
         <p>
-          We do not use advertising cookies, third-party behavioural tracking technologies, or cross-site tracking
+          We do not use advertising cookies, third-party behavioral tracking technologies, or cross-site tracking
           of any kind. If we add any non-essential cookies in the future, we will update this policy and obtain your
           consent where required by law.
         </p>
@@ -222,7 +222,7 @@ const sections: Section[] = [
           <strong>Server logs:</strong> retained for 30 days, then automatically purged.
         </li>
         <li>
-          <strong>Deleted accounts:</strong> personal data is removed within 30 days of deletion. Anonymised
+          <strong>Deleted accounts:</strong> personal data is removed within 30 days of deletion. Anonymized
           aggregate data (e.g. reservation counts) may be retained indefinitely.
         </li>
       </ul>
@@ -241,7 +241,7 @@ const sections: Section[] = [
           <li>HTTPS enforced in transit.</li>
         </ul>
         <p>
-          No system is perfectly secure. If you suspect unauthorised access to your account, change your password
+          No system is perfectly secure. If you suspect unauthorized access to your account, change your password
           immediately and contact us at <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </p>
       </>
@@ -360,7 +360,7 @@ export default function PrivacyPolicyPage() {
         </div>
 
         <footer className="privacy-footer">
-          <Link href="/">← Back to Mesa</Link>
+          <Link href="/" className="privacy-back-btn">← Back to Mesa</Link>
           <span>Last updated: {EFFECTIVE_DATE}</span>
         </footer>
       </div>
@@ -513,12 +513,23 @@ export default function PrivacyPolicyPage() {
           flex-wrap: wrap;
           gap: 8px;
         }
-        .privacy-footer a {
-          color: #c4410c;
+        .privacy-back-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 16px;
+          border-radius: 8px;
+          border: 1px solid rgba(24,22,15,0.14);
+          background: #fff;
+          color: #18160f;
+          font-size: 13px;
+          font-weight: 500;
           text-decoration: none;
+          transition: border-color 0.15s, color 0.15s;
         }
-        .privacy-footer a:hover {
-          text-decoration: underline;
+        .privacy-back-btn:hover {
+          border-color: #c4410c;
+          color: #c4410c;
         }
 
         @media (max-width: 600px) {
