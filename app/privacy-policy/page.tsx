@@ -27,7 +27,7 @@ const sections: Section[] = [
           collect, why we collect it, how we use it, and your rights over it.
         </p>
         <p>
-          By using Mesa you agree to the practices described here. If you disagree, do not use the service.
+          By using Mesa, you acknowledge that your personal data will be processed as described in this Privacy Policy.
         </p>
       </>
     ),
@@ -43,7 +43,7 @@ const sections: Section[] = [
         <ul>
           <li><strong>Full name</strong> — used to identify you across the platform.</li>
           <li><strong>Email address</strong> — account login, email verification, and transactional notifications.</li>
-          <li><strong>Password</strong> — stored as a bcrypt hash; we never store or transmit it in plain text.</li>
+          <li><strong>Password</strong> — securely hashed before storage; never stored or transmitted in plain text.</li>
           <li><strong>Phone number</strong> (optional) — used for reservation contact.</li>
           <li><strong>Account role</strong> — whether you are a diner or a restaurant owner.</li>
         </ul>
@@ -64,8 +64,9 @@ const sections: Section[] = [
 
         <h3>2.4 Guest notes (restaurant-side)</h3>
         <p>
-          Restaurant staff may attach internal notes to a guest&apos;s email address (e.g. dietary preferences, VIP
-          status). These notes are visible only to staff of that restaurant and to us as the platform operator.
+          Restaurant staff may attach internal notes to a guest&apos;s profile. These notes are visible only to staff
+          of that restaurant and to us as the platform operator. Restaurants are responsible for ensuring that any notes
+          they add comply with applicable privacy laws and do not contain sensitive personal data unless legally permitted.
         </p>
 
         <h3>2.5 Restaurant owner data</h3>
@@ -76,19 +77,40 @@ const sections: Section[] = [
 
         <h3>2.6 Technical data</h3>
         <ul>
-          <li>JWT authentication tokens stored locally in your browser.</li>
+          <li>Authentication tokens stored securely in your browser to maintain your session.</li>
           <li>Standard server logs (IP address, timestamp, request path) retained for up to 30 days.</li>
         </ul>
 
         <p>
-          <strong>We do not use third-party analytics, advertising pixels, or tracking cookies.</strong>
+          <strong>We do not use advertising or cross-site tracking cookies.</strong>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "cookies",
+    title: "3. Cookies & Browser Storage",
+    content: (
+      <>
+        <p>
+          Mesa uses essential browser storage technologies required for authentication, session management, security,
+          and core platform functionality. Specifically:
+        </p>
+        <ul>
+          <li><strong>Authentication tokens</strong> — stored in browser local storage to keep you signed in between visits.</li>
+          <li><strong>Session state</strong> — temporary data held in memory while you use the platform.</li>
+        </ul>
+        <p>
+          We do not use advertising cookies, third-party behavioural tracking technologies, or cross-site tracking
+          of any kind. If we add any non-essential cookies in the future, we will update this policy and obtain your
+          consent where required by law.
         </p>
       </>
     ),
   },
   {
     id: "how-we-use",
-    title: "3. How We Use Your Data",
+    title: "4. How We Use Your Data",
     content: (
       <table>
         <thead>
@@ -140,7 +162,7 @@ const sections: Section[] = [
   },
   {
     id: "email",
-    title: "4. Email Communications",
+    title: "5. Email Communications",
     content: (
       <>
         <p>We send the following transactional emails. They cannot be unsubscribed from while you have an active account, as they are necessary to operate the service:</p>
@@ -156,7 +178,7 @@ const sections: Section[] = [
   },
   {
     id: "sharing",
-    title: "5. Data Sharing",
+    title: "6. Data Sharing",
     content: (
       <>
         <p>We do <strong>not</strong> sell your personal data. We share data only in these limited cases:</p>
@@ -183,7 +205,7 @@ const sections: Section[] = [
   },
   {
     id: "retention",
-    title: "6. Data Retention",
+    title: "7. Data Retention",
     content: (
       <ul>
         <li>
@@ -208,13 +230,13 @@ const sections: Section[] = [
   },
   {
     id: "security",
-    title: "7. Security",
+    title: "8. Security",
     content: (
       <>
         <p>We take reasonable technical measures to protect your data:</p>
         <ul>
-          <li>Passwords hashed with bcrypt (cost factor 12).</li>
-          <li>Authentication via short-lived JWT access tokens and rotating refresh tokens.</li>
+          <li>Passwords are securely hashed before storage and are never stored or transmitted in plain text.</li>
+          <li>Authentication uses short-lived access tokens and rotating refresh tokens.</li>
           <li>SMTP credentials stored encrypted at rest.</li>
           <li>HTTPS enforced in transit.</li>
         </ul>
@@ -227,7 +249,7 @@ const sections: Section[] = [
   },
   {
     id: "rights",
-    title: "8. Your Rights",
+    title: "9. Your Rights",
     content: (
       <>
         <p>
@@ -272,7 +294,7 @@ const sections: Section[] = [
   },
   {
     id: "children",
-    title: "9. Children",
+    title: "10. Children",
     content: (
       <p>
         Mesa is not directed at children under 16. We do not knowingly collect personal data from anyone under 16. If
@@ -283,22 +305,24 @@ const sections: Section[] = [
   },
   {
     id: "changes",
-    title: "10. Changes to This Policy",
+    title: "11. Changes to This Policy",
     content: (
       <p>
-        We may update this policy. When we do, we&apos;ll update the effective date below and, for material changes,
-        notify registered users by email. Continued use after notice constitutes acceptance.
+        We may update this policy. When we do, we will update the effective date and, for material changes, notify
+        registered users by email. If required by law, we will obtain your consent for material changes before they
+        take effect.
       </p>
     ),
   },
   {
     id: "contact",
-    title: "11. Contact",
+    title: "12. Contact",
     content: (
       <>
         <p>Questions or requests about this policy:</p>
         <address>
           <strong>Mesa</strong>
+          {/* TODO: add legal entity name and registered jurisdiction before going live with payments */}
           <br />
           Email: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
         </address>
