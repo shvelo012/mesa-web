@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, setAccessToken } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { useTranslation } from "react-i18next";
 
@@ -10,7 +10,7 @@ function ActivateForm() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { loadPermissions, loadFeatures } = useAuthStore();
   const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
@@ -35,9 +35,9 @@ function ActivateForm() {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/activate", { token, password });
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      login(data.user.email, password).catch(() => {});
+      setAccessToken(data.accessToken);
+      useAuthStore.setState({ user: data.user });
+      await Promise.all([loadPermissions(), loadFeatures()]);
       setSuccess(true);
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: unknown) {

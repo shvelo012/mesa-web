@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getAccessToken } from "../lib/api";
 
 type Handler = (data: unknown) => void;
 
@@ -10,10 +11,8 @@ export function useSSE(handlers: Record<string, Handler>) {
   const esRef = useRef<EventSource | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCount = useRef(0);
-  // Store handlers in ref so reconnect always uses latest handlers
   const handlersRef = useRef(handlers);
 
-  // Update handlers ref in effect, not during render
   useEffect(() => {
     handlersRef.current = handlers;
   });
@@ -23,8 +22,13 @@ export function useSSE(handlers: Record<string, Handler>) {
 
     function connectSSE() {
       if (cancelled) return;
-      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-      if (!token) return;
+
+      const token = getAccessToken();
+      if (!token) {
+        // Access token not ready yet (silent refresh in progress) — retry shortly
+        retryRef.current = setTimeout(connectSSE, 300);
+        return;
+      }
 
       const url = `${BASE}/events/stream?token=${encodeURIComponent(token)}`;
       const es = new EventSource(url);
@@ -43,8 +47,7 @@ export function useSSE(handlers: Record<string, Handler>) {
         retryRef.current = setTimeout(connectSSE, delay);
       };
 
-      const currentHandlers = handlersRef.current;
-      for (const [event, handler] of Object.entries(currentHandlers)) {
+      for (const [event, handler] of Object.entries(handlersRef.current)) {
         es.addEventListener(event, (e: MessageEvent) => {
           try {
             handlersRef.current[event]?.(JSON.parse(e.data));

@@ -1,12 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User, Permission } from "../types";
-import { api } from "../lib/api";
+import { api, setAccessToken, refreshSilently } from "../lib/api";
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   permissions: Permission[];
   featureKeys: string[];
   _hasHydrated: boolean;
@@ -19,8 +17,8 @@ interface AuthState {
     role: "USER" | "RESTAURANT_OWNER";
   }) => Promise<void>;
   logout: () => void;
+  silentRefresh: () => Promise<void>;
   can: (permission: Permission) => boolean;
-  /** Check if the restaurant's active plan (+ direct grants) includes a feature key */
   hasFeature: (key: string) => boolean;
   loadPermissions: () => Promise<void>;
   loadFeatures: () => Promise<void>;
@@ -32,8 +30,6 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
       permissions: [],
       featureKeys: [],
       _hasHydrated: false,
@@ -41,9 +37,9 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email, password) => {
         const { data } = await api.post("/auth/login", { email, password });
-        localStorage.setItem("accessToken", data.accessToken);
-        localStorage.setItem("refreshToken", data.refreshToken);
-        set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken });
+        // refreshToken is set as HttpOnly cookie by the server
+        setAccessToken(data.accessToken);
+        set({ user: data.user });
         await get().loadPermissions();
         await get().loadFeatures();
       },
@@ -53,9 +49,19 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        set({ user: null, accessToken: null, refreshToken: null, permissions: [], featureKeys: [] });
+        setAccessToken(null);
+        // Tell server to clear the HttpOnly refresh cookie
+        api.post("/auth/logout").catch(() => {});
+        set({ user: null, permissions: [], featureKeys: [] });
+      },
+
+      silentRefresh: async () => {
+        try {
+          await refreshSilently();
+        } catch {
+          setAccessToken(null);
+          set({ user: null, permissions: [], featureKeys: [] });
+        }
       },
 
       can: (permission: Permission) => {
@@ -68,7 +74,6 @@ export const useAuthStore = create<AuthState>()(
       hasFeature: (key: string) => {
         const { user, featureKeys } = get();
         if (!user) return false;
-        // ADMIN has everything
         if (user.role === "ADMIN") return true;
         return featureKeys.includes(key);
       },
@@ -88,7 +93,6 @@ export const useAuthStore = create<AuthState>()(
       loadFeatures: async () => {
         try {
           const { user } = get();
-          // Only owners/admins have subscriptions
           if (!user || (user.role !== "RESTAURANT_OWNER" && user.role !== "ADMIN")) return;
           const { data } = await api.get("/plans/my-features");
           if (Array.isArray(data)) {
@@ -109,9 +113,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-store",
+      // Never persist tokens — access token in memory, refresh token in HttpOnly cookie
       partialize: (s) => ({ user: s.user, permissions: s.permissions, featureKeys: s.featureKeys }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
+        // If user was logged in, try to get a fresh access token from the HttpOnly cookie
+        if (state?.user) {
+          state.silentRefresh();
+        }
       },
     }
   )
