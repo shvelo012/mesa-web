@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { getAccessToken } from "../lib/api";
+import { getAccessToken, api } from "../lib/api";
 
 type Handler = (data: unknown) => void;
 
@@ -20,17 +20,26 @@ export function useSSE(handlers: Record<string, Handler>) {
   useEffect(() => {
     let cancelled = false;
 
-    function connectSSE() {
+    async function connectSSE() {
       if (cancelled) return;
 
-      const token = getAccessToken();
-      if (!token) {
-        // Access token not ready yet (silent refresh in progress) — retry shortly
+      if (!getAccessToken()) {
         retryRef.current = setTimeout(connectSSE, 300);
         return;
       }
 
-      const url = `${BASE}/events/stream?token=${encodeURIComponent(token)}`;
+      let sseToken: string;
+      try {
+        const { data } = await api.post("/events/token");
+        sseToken = data.token;
+      } catch {
+        if (!cancelled) retryRef.current = setTimeout(connectSSE, 2000);
+        return;
+      }
+
+      if (cancelled) return;
+
+      const url = `${BASE}/events/stream?token=${encodeURIComponent(sseToken)}`;
       const es = new EventSource(url);
       esRef.current = es;
 
