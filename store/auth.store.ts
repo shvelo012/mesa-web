@@ -7,6 +7,7 @@ interface AuthState {
   user: User | null;
   permissions: Permission[];
   featureKeys: string[];
+  loadError: string | null;
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       permissions: [],
       featureKeys: [],
+      loadError: null,
       _hasHydrated: false,
       setHasHydrated: (v) => set({ _hasHydrated: v }),
 
@@ -82,11 +84,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await api.get("/restaurants/me/all");
           if (Array.isArray(data) && data.length > 0) {
-            const first = data[0];
-            set({ permissions: first.permissions || [] });
+            set({ permissions: data[0].permissions || [], loadError: null });
           }
         } catch {
-          // silently fail
+          set({ loadError: "Failed to load permissions — some features may be unavailable" });
         }
       },
 
@@ -96,10 +97,10 @@ export const useAuthStore = create<AuthState>()(
           if (!user || (user.role !== "RESTAURANT_OWNER" && user.role !== "ADMIN")) return;
           const { data } = await api.get("/plans/my-features");
           if (Array.isArray(data)) {
-            set({ featureKeys: data });
+            set({ featureKeys: data, loadError: null });
           }
         } catch {
-          // silently fail — featureKeys stays empty
+          set({ loadError: "Failed to load features — some features may be unavailable" });
         }
       },
 
