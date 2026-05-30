@@ -13,14 +13,22 @@ export default function I18nProvider({ children }: { children: ReactNode }) {
     };
     i18n.on('languageChanged', sync);
 
-    // Apply the saved language preference after hydration.
-    // Done inside useEffect so the initial server/client render both produce
-    // English HTML, eliminating the hydration mismatch.
+    // Apply saved preference, or detect via IP on first visit.
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && saved !== i18n.language) {
-      i18n.changeLanguage(saved);
+    if (saved) {
+      if (saved !== i18n.language) i18n.changeLanguage(saved);
+      else sync(i18n.language);
     } else {
-      sync(i18n.language);
+      fetch('https://ipapi.co/json/')
+        .then(r => r.json())
+        .then((data: { country_code?: string }) => {
+          const lang = data.country_code === 'GE' ? 'ka' : 'en';
+          localStorage.setItem(STORAGE_KEY, lang);
+          i18n.changeLanguage(lang);
+        })
+        .catch(() => {
+          sync(i18n.language);
+        });
     }
 
     return () => { i18n.off('languageChanged', sync); };
